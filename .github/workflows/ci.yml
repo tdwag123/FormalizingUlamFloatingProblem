@@ -1,0 +1,33 @@
+name: Lean and blueprint
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: leanprover/lean-action@v1
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Check declarations and axiom dependencies
+        run: python scripts/check_blueprint.py
+      - name: Install blueprint tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y graphviz libgraphviz-dev
+          python -m pip install -r blueprint/requirements.txt
+      - name: Render blueprint
+        run: |
+          python scripts/build_blueprint.py
+          python scripts/check_blueprint_html.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: blueprint-html
+          path: blueprint/web/

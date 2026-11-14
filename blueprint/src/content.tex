@@ -1,0 +1,2294 @@
+\section{Scope and proof contract}
+
+The goal is kernel-checked rigidity at perimetral densities $1/3$, $1/4$,
+and $1/5$, supported by reusable lemmas about curves and moving polygons.
+This is an ongoing blueprint, not a completed formalization. Geometric
+rigidity at $1/3$ and $1/4$ is proved in Lean; the $1/5$ target remains
+unproved. The scope of the checked theorems is
+compact strictly convex planar bodies with a specified simple, $C^1$,
+unit-speed boundary parametrization. No central symmetry is assumed.
+
+Perimetral density $\sigma$ is a boundary-length fraction, distinct from
+submerged area fraction $\rho$. We first target the geometric constant-chord
+formulation. Arc-length normalization of regular boundary data is proved.
+The connection to physical equilibrium remains a separate proof obligation.
+
+Only kernel-checked declarations may carry \texttt{leanok}. Defining a
+target proposition is not proving it. Each statement-only link ends in
+\texttt{Statement} and names a definition of type \texttt{Prop}, not a proof
+or an axiom. Such nodes remain unmarked until a separately named theorem
+proves the specified proposition. Mathlib quality is a design goal, not a claim
+of upstream review or acceptance.
+
+\section{General definitions and first lemmas}
+
+\begin{definition}[Constant chord]
+\label{def:chord}
+\lean{UlamFloating.HasConstantChord}
+\leanok
+For $\gamma:\R\to E$ into a pseudometric space, constant chords of increment
+$h$ and length $\ell$ mean $d(\gamma(t+h),\gamma(t))=\ell$ for every $t$.
+\end{definition}
+
+\begin{lemma}[Basic chord API]
+\label{lem:chord-api}
+\lean{UlamFloating.HasConstantChord.nonneg,UlamFloating.HasConstantChord.neg,UlamFloating.HasConstantChord.shift,UlamFloating.HasConstantChord.complement}
+\leanok
+\uses{def:chord}
+The length is nonnegative. Negating the increment or translating the
+parameter preserves the chord law. If $\gamma$ is $P$-periodic, replacing
+$h$ by $P-h$ also preserves it.
+\end{lemma}
+\begin{proof}
+\leanok
+Use distance symmetry and nonnegativity. Evaluate the law at $t-h$ for
+reversal, then use $\gamma(t+P-h)=\gamma(t-h)$ for the complement.
+\end{proof}
+
+\begin{definition}[Boundary data]
+\label{def:boundary}
+\lean{UlamFloating.Plane,UlamFloating.IsUnitSpeedBoundary}
+\leanok
+Use Euclidean $\R^2$, with its Euclidean norm. Boundary data for $K$ consist
+of $P>0$ and $\gamma:\R\to\R^2$, where $K$ is compact, strictly convex,
+and has nonempty interior; $\gamma$ is $C^1$ and $P$-periodic; and
+\[
+ \norm{\gamma'(t)}=1,\quad \gamma(\R)=\partial K,\quad
+ \gamma(s)=\gamma(t)\ \Longleftrightarrow\
+ \exists k\in\Z,\ s=t+kP.
+\]
+The last condition excludes multiple traversals.
+\end{definition}
+
+\begin{definition}[Perimetral property and rigidity target]
+\label{def:perimetral}
+\lean{UlamFloating.HasPerimetralChordProperty,UlamFloating.IsDisk,UlamFloating.PerimetralRigidity}
+\leanok
+\uses{def:boundary,def:chord}
+Let $\mathcal P_\sigma(K)$ mean $0<\sigma<1$ and there exist boundary data
+and $\ell>0$ with constant chords of increment $\sigma P$. A disk is a
+closed Euclidean ball of positive radius. Define the proposition
+\[
+ \mathcal R(\sigma):\quad
+ \forall K,\ \mathcal P_\sigma(K)\Longrightarrow
+ \exists c\in\R^2\ \exists r>0,\ K=\overline B(c,r).
+\]
+\end{definition}
+
+\begin{lemma}[Complementary densities]
+\label{lem:complement}
+\lean{UlamFloating.HasPerimetralChordProperty.complement,UlamFloating.PerimetralRigidity.complement}
+\leanok
+\uses{def:perimetral,lem:chord-api}
+$\mathcal P_\sigma(K)$ implies $\mathcal P_{1-\sigma}(K)$, and
+$\mathcal R(\sigma)$ implies $\mathcal R(1-\sigma)$.
+\end{lemma}
+\begin{proof}
+\leanok
+Apply the chord complement with $(1-\sigma)P=P-\sigma P$.
+Apply it twice for the rigidity implication.
+\end{proof}
+
+\begin{definition}[Regular boundary and traversal length]
+\label{def:regular-boundary}
+\lean{UlamFloating.IsRegularBoundary,UlamFloating.traversalLength}
+\leanok
+\uses{def:boundary}
+A regular boundary has the compactness, convexity, simplicity, periodicity,
+and range conditions of boundary data, with nonzero derivative replacing
+unit speed. For a period $Q$, its traversal length is
+$\int_0^Q\norm{\varphi'(t)}\,dt$.
+\end{definition}
+
+\begin{lemma}[Variation bounds for one-Lipschitz curves]
+\label{lem:lipschitz-variation}
+\lean{UlamFloating.eVariationOn_le_of_one_lipschitz,UlamFloating.variation_bounds_of_one_lipschitz}
+\leanok
+A one-Lipschitz curve into any pseudometric space has variation on
+$[a,b]$ at most $b-a$ for $a\leq b$. Its endpoint distance is a lower
+bound for that variation.
+\end{lemma}
+\begin{proof}
+\leanok
+Apply the Lipschitz composition bound for variation to the identity
+function. Its variation is bounded by the difference of the endpoints.
+The two-point partition supplies the lower bound.
+\end{proof}
+
+\begin{lemma}[Derivative of cumulative variation]
+\label{lem:variation-derivative}
+\lean{UlamFloating.slope_variation_bounds,UlamFloating.hasDerivAt_variation_of_unit_speed}
+\leanok
+\uses{lem:lipschitz-variation}
+For a one-Lipschitz curve, difference quotients of signed cumulative
+variation lie between the norm of the curve's difference quotients and
+one. For a differentiable unit-speed curve they therefore converge to
+one. Continuity of the derivative is unnecessary.
+\end{lemma}
+\begin{proof}
+\leanok
+Additivity of signed variation identifies its increments with interval
+variation. Divide the preceding bounds by the parameter increment, treating
+both orders of endpoints. Use the derivative of the curve and the squeeze
+theorem to obtain derivative one for cumulative variation.
+\end{proof}
+
+\begin{proposition}[Metric length of a unit-speed curve]
+\label{prop:unit-speed-length}
+\lean{UlamFloating.variation_eq_sub_of_unit_speed,UlamFloating.eVariationOn_eq_of_unit_speed}
+\leanok
+\uses{lem:variation-derivative}
+For every differentiable unit-speed curve in a real normed space, signed
+variation from $a$ to $b$ equals $b-a$. When $a\leq b$, its metric total
+variation on $[a,b]$ is exactly $b-a$.
+\end{proposition}
+\begin{proof}
+\leanok
+Subtract the parameter from cumulative variation. Its derivative vanishes,
+so the mean value theorem makes the difference constant. Variation at the
+base point is zero. The one-Lipschitz bound guarantees finite variation,
+allowing conversion back from real-valued signed variation.
+\end{proof}
+
+\begin{proposition}[Length of a unit-speed boundary traversal]
+\label{prop:boundary-length}
+\lean{UlamFloating.IsUnitSpeedBoundary.traversalLength_eq,UlamFloating.unit_speed_boundary_length}
+\leanok
+\uses{def:boundary,def:regular-boundary,prop:unit-speed-length}
+For unit-speed boundary data, both the integral of speed and metric total
+variation over $[0,P]$ equal $P$.
+\end{proposition}
+\begin{proof}
+\leanok
+Integrate the constant speed one, and apply the unit-speed metric length
+theorem to the positive traversal interval.
+\end{proof}
+
+\begin{lemma}[Integral shifts by integer periods]
+\label{lem:integral-period-shift}
+\lean{UlamFloating.integral_add_int_mul_period}
+\leanok
+For a continuous $Q$-periodic real function $v$ and every integer $k$,
+\[
+ \int_0^{t+kQ}v=\int_0^t v+k\int_0^Qv.
+\]
+\end{lemma}
+\begin{proof}
+\leanok
+Split the integral after shifting the upper endpoint by the period $kQ$,
+and use the integer-multiple formula for integrals of periodic functions.
+\end{proof}
+
+\begin{lemma}[Integral coordinates for positive periodic speed]
+\label{lem:integral-coordinates}
+\lean{UlamFloating.strictMono_integral_of_pos,UlamFloating.surjective_integral_of_pos_periodic,UlamFloating.exists_integral_orderIso}
+\leanok
+\uses{lem:integral-period-shift}
+For a positive continuous $Q$-periodic function $v$, with $Q>0$,
+$S(t)=\int_0^t v$ is an increasing $C^1$ order isomorphism of $\R$.
+Its inverse is $C^1$, with derivative $1/v(S^{-1}(t))$.
+\end{lemma}
+\begin{proof}
+\leanok
+The fundamental theorem gives $S'=v>0$, hence strict monotonicity.
+If $P=\int_0^Qv>0$, then $S(kQ)=kP$. Integer multiples bracket every
+real value, so continuity gives surjectivity. Bundle this map as an
+order isomorphism and apply the inverse derivative and regularity theorems.
+\end{proof}
+
+\begin{proposition}[Unit-speed reparametrization in a real normed space]
+\label{prop:regular-curve-reparam}
+\lean{UlamFloating.exists_unitSpeed_reparam}
+\leanok
+\uses{lem:integral-coordinates,lem:integral-period-shift,prop:unit-speed-length}
+Every regular $C^1$ periodic curve in a real normed space admits an
+increasing $C^1$ change of parameter $e$, with $C^1$ inverse and $e(0)=0$,
+such that $\varphi\circ e$ has unit speed. For the new positive period
+$P=\int_0^Q\norm{\varphi'}$, one has
+$e(t+kP)=e(t)+kQ$ for every integer $k$. The original curve's metric
+total variation on $[0,Q]$ equals $P$.
+\end{proposition}
+\begin{proof}
+\leanok
+Apply the integral-coordinate theorem to $v=\norm{\varphi'}$ and put
+$e=S^{-1}$. Differentiate the composition to obtain unit speed.
+The integer shift law for $S$ gives the corresponding law for its inverse.
+Increasing reparametrization preserves metric variation; $S$ maps
+$[0,Q]$ onto $[0,P]$, where the unit-speed length theorem applies.
+\end{proof}
+
+\begin{proposition}[Arc-length normalization of boundary data]
+\label{prop:arclength}
+\lean{UlamFloating.arc_length_normalization}
+\leanok
+\uses{def:boundary,def:regular-boundary,prop:regular-curve-reparam}
+Given a regular boundary $(K,Q,\varphi)$, there exist $P$, a unit-speed
+boundary $\gamma$, and an increasing $C^1$ order isomorphism $e:\R\to\R$
+with $C^1$ inverse, such that $e(0)=0$, $e(t+P)=e(t)+Q$, and
+$\gamma(t)=\varphi(e(t))$. The number $P$ equals both the integral of speed
+and the metric total variation of $\varphi$ on $[0,Q]$.
+\end{proposition}
+\begin{proof}
+\leanok
+Apply the normed-space reparametrization theorem. The integer shift law
+preserves once-traversed simplicity in both directions, while the order
+isomorphism's surjectivity preserves the range. The underlying body is
+unchanged, so its compactness and strict convexity also hold for the
+normalized boundary data. Metric length is expressed by mathlib's
+\texttt{eVariationOn}. The input is a regular embedded periodic curve;
+a separate manifold-only boundary interface is not assumed here.
+\end{proof}
+
+\section{Rational sampling and local kinematics}
+
+\begin{definition}[Sampled vertices]
+\label{def:sampling}
+\lean{UlamFloating.sampledVertex}
+\leanok
+Set $v_i(t)=\gamma(t+ih)$ for natural-number indices $i$.
+\end{definition}
+
+\begin{lemma}[Closure and equal edges]
+\label{lem:sampling}
+\lean{UlamFloating.sampledVertex_zero,UlamFloating.sampledVertex_succ,UlamFloating.sampledVertex_add_period,UlamFloating.HasConstantChord.sampled_edge}
+\leanok
+\uses{def:sampling,def:chord}
+For $n\neq0$ and $h=P/n$, a $P$-periodic curve satisfies
+$v_{i+n}(t)=v_i(t)$. The chord law gives
+$d(v_{i+1}(t),v_i(t))=\ell$. Also $v_0(t)=\gamma(t)$ and
+$v_{i+1}(t)=v_i(t+h)$.
+\end{lemma}
+\begin{proof}
+\leanok
+Expand the parameter, use $n(P/n)=P$, and apply periodicity.
+Evaluate the chord law at $t+ih$ for the edge equality.
+\end{proof}
+
+\begin{definition}[Carousel]
+\label{def:carousel}
+\lean{UlamFloating.IsCarousel}
+\leanok
+For a permutation $s$ of an index type, a carousel consists of regular
+$C^1$ curves $p_i$ in a real inner product space, a constant $\ell>0$, and
+the laws
+\[
+ \norm{p_{s(i)}-p_i}=\ell,\qquad
+ p_i'+p_{s(i)}'=a_i(t)(p_{s(i)}-p_i)
+\]
+for some real scalar $a_i(t)$ at every index and time. The velocity sum is
+twice the midpoint velocity. One cyclic orbit, convexity, and the fact that
+all vertices trace the same boundary are additional application hypotheses.
+\end{definition}
+
+\begin{lemma}[Rigid-edge derivative]
+\label{lem:orthogonal}
+\lean{UlamFloating.inner_edge_velocity_eq_zero}
+\leanok
+If $e=q-p$ has constant norm, and $u=p'$, $v=q'$, then $\ip e{v-u}=0$.
+\end{lemma}
+\begin{proof}
+\leanok
+Differentiate $\ip ee=\ell^2$ and use symmetry of the real inner product.
+\end{proof}
+
+\begin{lemma}[Equal speeds and reflection]
+\label{lem:reflection}
+\lean{UlamFloating.norm_eq_of_carousel_laws,UlamFloating.velocity_eq_reflection}
+\leanok
+If $\ip e{v-u}=0$ and $u+v=ae$, then $\norm u=\norm v$.
+For $e\neq0$, $v=(2\ip eu/\norm e^2)e-u$.
+\end{lemma}
+\begin{proof}
+\leanok
+Pair the velocity-sum equation with $v-u$ to compare squared norms.
+Pair it with $e$ to solve for $a$. No angle lifts are required.
+\end{proof}
+
+\begin{definition}[Finite polygon geometry]
+\label{def:polygon-geometry}
+\lean{UlamFloating.planeAreaForm,UlamFloating.boundarySamples,UlamFloating.IsStrictlyConvexPolygon,UlamFloating.IsRegularPolygon}
+\leanok
+\uses{def:sampling}
+Finite samples use indices in $\operatorname{Fin}(n)$ and successor
+\texttt{finRotate}. A strictly convex polygon has distinct vertices, $n\geq3$,
+and an orientation for which every nonincident vertex lies strictly to the
+left of every oriented edge. A regular polygon has a center $c$, radius
+$r>0$, and the full distance relations
+\[
+ d(p_i,c)=r,\qquad d(p_i,p_j)^2=
+ 2r^2\bigl(1-\cos(2\pi(i-j)/n)\bigr).
+\]
+The full pairwise formula specifies cyclic labeling and excludes star order.
+The area form is mathlib's oriented Euclidean area form, specialized to the plane.
+\end{definition}
+
+\begin{lemma}[Finite cyclic sampling and differentiation]
+\label{lem:finite-cycle}
+\lean{UlamFloating.boundarySamples_rotate,UlamFloating.HasConstantChord.boundarySamples_edge,UlamFloating.hasDerivAt_boundarySamples,UlamFloating.deriv_boundarySamples,UlamFloating.deriv_boundarySamples_rotate}
+\leanok
+\uses{lem:sampling,def:polygon-geometry}
+Finite samples satisfy $p_{i+1}(t)=p_i(t+P/n)$, including the last-to-first
+wrap. The constant-chord law gives every cyclic edge length.
+Differentiating a sample translates the original derivative by its
+parameter offset; differentiating the cyclic shift gives the next tangent.
+\end{lemma}
+\begin{proof}
+\leanok
+Split into the last index and all other indices. Use periodicity for the
+wrap and the natural-number sampling identity elsewhere. Apply the chain
+rule to the parameter translations.
+\end{proof}
+
+\begin{lemma}[Boundary traversal and distinct samples]
+\label{lem:boundary-embedding}
+\lean{UlamFloating.IsUnitSpeedBoundary.deriv_ne_zero,UlamFloating.IsUnitSpeedBoundary.mem_frontier,UlamFloating.IsUnitSpeedBoundary.mem,UlamFloating.IsUnitSpeedBoundary.injOn_Ico,UlamFloating.IsUnitSpeedBoundary.boundarySamples_injective}
+\leanok
+\uses{def:boundary,def:polygon-geometry}
+Every boundary value lies in the body and its frontier, and every tangent
+is nonzero. The boundary is injective on each half-open interval $[a,a+P)$.
+Consequently the finite samples at distinct indices are distinct points.
+\end{lemma}
+\begin{proof}
+\leanok
+Equal boundary values have parameters differing by an integer multiple
+of $P$. Two parameters in the stated interval force that integer strictly
+between $-1$ and $1$, hence zero. Sample offsets lie in $[0,P)$.
+\end{proof}
+
+\begin{lemma}[Strict supporting functionals and tangents]
+\label{lem:support}
+\lean{UlamFloating.exists_strict_support,UlamFloating.exists_strict_support_tangent}
+\leanok
+\uses{def:boundary}
+For a strictly convex subset of a real normed space and a noninterior
+point $p$ in it, there is a continuous linear functional $f$ with
+$f(x)<f(p)$ for every other point $x$ of the set. If a differentiable
+curve stays in the set and passes through $p$, its tangent $u$ satisfies
+$f(u)=0$.
+\end{lemma}
+\begin{proof}
+\leanok
+Separate $p$ from the open convex interior by Hahn--Banach. The midpoint
+of $p$ and any other point lies in the interior, yielding strict separation
+on the whole set. Along the curve, the supporting functional has a maximum
+at $p$; Fermat's theorem gives zero derivative.
+\end{proof}
+
+\begin{lemma}[Planar decomposition and tangent sides]
+\label{lem:planar-decomposition}
+\lean{UlamFloating.norm_sq_smul_eq_inner_add_area,UlamFloating.areaForm_mul_pos_of_support}
+\leanok
+\uses{def:polygon-geometry}
+For the oriented area form $\omega$ and right-angle rotation $J$,
+\[
+ \norm u^2 x=\ip ux\,u+\omega(u,x)Ju.
+\]
+If $\norm u=1$, $f(u)=0$, and $f(x),f(y)<0$, then
+$\omega(u,x)\omega(u,y)>0$.
+\end{lemma}
+\begin{proof}
+\leanok
+Pair with an arbitrary vector and use the two-dimensional Gram identity.
+Applying $f$ to the decomposition gives $f(x)=\omega(u,x)f(Ju)$;
+multiply the corresponding equalities for $x$ and $y$.
+\end{proof}
+
+\begin{lemma}[Consistent directed tangent orientation]
+\label{lem:tangent-orientation}
+\lean{UlamFloating.mul_pos_of_continuous_ne_zero,UlamFloating.IsUnitSpeedBoundary.areaForm_mul_pos,UlamFloating.IsUnitSpeedBoundary.tangent_area_ne_zero,UlamFloating.IsUnitSpeedBoundary.tangent_area_mul_pos}
+\leanok
+\uses{lem:support,lem:planar-decomposition,lem:boundary-embedding}
+Fix an interior point $c$ and an orientation. The continuous function
+$D(t)=\omega(\gamma'(t),c-\gamma(t))$ never vanishes and satisfies
+$D(s)D(t)>0$ for all $s,t$. For any other point $x$ of the body,
+\[
+ \omega(\gamma'(t),x-\gamma(t))D(t)>0.
+\]
+The constant-sign argument is proved for any continuous nonvanishing
+real function on a preconnected space.
+\end{lemma}
+\begin{proof}
+\leanok
+Use a strict supporting functional and planar decomposition for the
+pointwise inequalities. Continuity follows from the $C^1$ hypothesis.
+A change of sign would give a zero by the intermediate value theorem.
+\end{proof}
+
+\begin{lemma}[Distinct directed tangents]
+\label{lem:distinct-tangents}
+\lean{UlamFloating.IsUnitSpeedBoundary.deriv_ne_of_ne}
+\leanok
+\uses{lem:tangent-orientation}
+If $\gamma(s)\neq\gamma(t)$, then $\gamma'(s)\neq\gamma'(t)$.
+\end{lemma}
+\begin{proof}
+\leanok
+If both tangents equal $u$, put $A=\omega(u,\gamma(t)-\gamma(s))$.
+The supporting-side inequalities give $A D(s)>0$ and $-A D(t)>0$.
+Multiplying contradicts $D(s)D(t)>0$.
+\end{proof}
+
+\begin{lemma}[Midpoint law from convex boundary geometry]
+\label{lem:midpoint-extraction}
+\lean{UlamFloating.exists_smul_of_inner_eq_zero,UlamFloating.midpoint_parallel_of_equal_norms,UlamFloating.IsUnitSpeedBoundary.chord_midpoint_parallel}
+\leanok
+\uses{lem:orthogonal,lem:planar-decomposition,lem:distinct-tangents}
+In the plane, if $e\neq0$, $u\neq v$, $\norm u=\norm v$, and
+$\ip e{v-u}=0$, then $u+v$ is parallel to $e$.
+Thus every constant positive chord of the strictly convex unit-speed
+boundary has edge-parallel midpoint velocity.
+\end{lemma}
+\begin{proof}
+\leanok
+Both $e$ and $u+v$ are perpendicular to the nonzero vector $v-u$.
+The planar Gram identity makes them parallel. Positive chord length and
+the distinct-tangent theorem supply the two nonzero hypotheses.
+\end{proof}
+
+\begin{proposition}[Carousel kinematic extraction]
+\label{prop:kinematic-extraction}
+\lean{UlamFloating.IsUnitSpeedBoundary.boundarySamples_isCarousel}
+\leanok
+\uses{lem:finite-cycle,lem:boundary-embedding,lem:midpoint-extraction,def:carousel}
+Every rational sampling of a strictly convex unit-speed boundary with
+constant positive chords is a carousel: it has regular $C^1$ vertices,
+equal constant edge lengths, and edge-parallel midpoint velocities.
+\end{proposition}
+\begin{proof}
+\leanok
+Combine the finite-sampling derivative formulas, unit speed, cyclic
+edge equalities, and the midpoint law at each translated parameter.
+\end{proof}
+
+\begin{lemma}[Distinct frontier points are noncollinear]
+\label{lem:frontier-triangle}
+\lean{UlamFloating.areaForm_ne_zero_of_mem_frontier}
+\leanok
+\uses{lem:support,lem:planar-decomposition}
+Three distinct frontier points of a closed strictly convex planar set
+have nonzero oriented area.
+\end{lemma}
+\begin{proof}
+\leanok
+If $c-a=k(b-a)$, strict support at $a$ gives $k>0$ and strict support at
+$b$ gives $k<1$. Thus $c=(1-k)a+kb$ lies in the interior by strict
+convexity, contradicting its frontier membership.
+\end{proof}
+
+\begin{lemma}[Positive sign from a boundary derivative]
+\label{lem:interval-sign}
+\lean{UlamFloating.pos_on_Ioo_of_hasDerivAt_pos}
+\leanok
+Let $f$ be continuous and nonzero on $(a,b)$, with $f(a)=0$ and a
+positive derivative at $a$. Then $f(x)>0$ for every $x\in(a,b)$.
+\end{lemma}
+\begin{proof}
+\leanok
+The right difference quotients converge to a positive number, so $f$
+is positive at some point in $(a,b)$. A negative value elsewhere would
+force a zero by the intermediate value theorem.
+\end{proof}
+
+\begin{lemma}[Positive boundary orientation]
+\label{lem:positive-orientation}
+\lean{UlamFloating.IsUnitSpeedBoundary.exists_positive_orientation}
+\leanok
+\uses{lem:tangent-orientation}
+There is an orientation $\omega$ such that
+$\omega(\gamma'(t),x-\gamma(t))>0$ for every $t$ and every
+$x\in K\setminus\{\gamma(t)\}$.
+\end{lemma}
+\begin{proof}
+\leanok
+Choose the sign of the orientation using one tangent and an interior
+point. The previously proved sign products propagate positivity to
+every tangent and every other point of the body.
+\end{proof}
+
+\begin{lemma}[Oriented area respects traversal order]
+\label{lem:ordered-triangle}
+\lean{UlamFloating.IsUnitSpeedBoundary.areaForm_pos_of_ordered,UlamFloating.areaForm_sub_cyclic}
+\leanok
+\uses{lem:frontier-triangle,lem:interval-sign,lem:positive-orientation,lem:boundary-embedding}
+In the positive boundary orientation, $a<b<c<a+P$ implies
+$\omega(\gamma(b)-\gamma(a),\gamma(c)-\gamma(a))>0$.
+Cyclically rotating the three vertices preserves this area.
+\end{lemma}
+\begin{proof}
+\leanok
+Fix $a,c$ and vary $b$. The area is continuous and nonzero on $(a,c)$
+by injectivity and noncollinearity. It vanishes at $a$ and its derivative
+there is strictly positive by the tangent-side inequality.
+Cyclic invariance follows by bilinearity and skew symmetry.
+\end{proof}
+
+\begin{proposition}[Strict convexity of rational boundary samples]
+\label{prop:sample-convexity}
+\lean{UlamFloating.IsUnitSpeedBoundary.boundarySamples_strictlyConvex}
+\leanok
+\uses{lem:ordered-triangle,lem:boundary-embedding,def:polygon-geometry}
+For every $n\geq3$ and every $t$, the rational boundary samples form
+a strictly convex polygon in their specified cyclic order. No constant
+chord-length assumption is required for this conclusion.
+\end{proposition}
+\begin{proof}
+\leanok
+For each directed edge, order its endpoints and any nonincident vertex
+within one traversal. Apply the ordered-triangle inequality and cyclic
+area invariance, including the edge from the last sample to the first.
+\end{proof}
+
+\begin{proposition}[Full convex carousel extraction]
+\label{prop:extraction}
+\lean{UlamFloating.carousel_extraction}
+\leanok
+\uses{prop:kinematic-extraction,prop:sample-convexity,lem:finite-cycle}
+For $n\geq3$, the samples from $\mathcal P_{1/n}(K)$ descend to
+$\Z/n\Z$ and form a strictly convex equilateral carousel.
+\end{proposition}
+\begin{proof}
+\leanok
+Combine kinematic extraction, strict convexity of the sampled polygon,
+and the finite cyclic time-shift identity.
+\end{proof}
+
+\begin{lemma}[Intrinsic second carousel law]
+\label{lem:second-carousel}
+\lean{UlamFloating.velocity_sub_eq_rotation,UlamFloating.abs_angular_speed_le,UlamFloating.IsCarousel.edge_rotation}
+\leanok
+\uses{def:carousel,lem:reflection}
+For an oriented planar carousel edge $e=q-p$ of length $\ell$ and endpoint
+velocities $u,v$,
+\[
+ v-u=\frac{2\omega(u,e)}{\ell^2}Je.
+\]
+When $\norm u=1$, the absolute value of this angular coefficient is at
+most $2/\ell$.
+\end{lemma}
+\begin{proof}
+\leanok
+The midpoint law gives $\omega(e,u+v)=0$. Orthogonality of edge and
+relative velocity, together with the oriented orthogonal decomposition,
+gives the displayed formula. The area-form bound
+$|\omega(u,e)|\leq\norm u\norm e$ gives the estimate.
+\end{proof}
+
+\begin{proposition}[Positive rotation of constant boundary chords]
+\label{prop:boundary-chord-rotation}
+\lean{UlamFloating.IsUnitSpeedBoundary.chord_rotation}
+\leanok
+\uses{lem:second-carousel,lem:positive-orientation,prop:kinematic-extraction}
+For a strictly convex unit-speed boundary with constant positive chords
+of length $\ell$, there is one orientation in which the chord vector
+$e(t)=\gamma(t+h)-\gamma(t)$ satisfies $e'=aJe$, where
+$0<a(t)\leq2/\ell$ for every $t$.
+\end{proposition}
+\begin{proof}
+\leanok
+Choose the positive tangent orientation. The other chord endpoint lies
+strictly to the left of the tangent, making $\omega(\gamma',e)>0$.
+Differentiate the chord vector and use the intrinsic second carousel law.
+This establishes rotation without choosing a global angle lift.
+\end{proof}
+
+\begin{lemma}[Reconstruction from angular speed]
+\label{lem:rotation-reconstruction}
+\lean{UlamFloating.rotation_solution_eq,UlamFloating.rotation_solution_eq_integral}
+\leanok
+In an oriented Euclidean plane, suppose $e'=aJe$ and $\theta'=a$ with
+$\theta(0)=0$. Then
+\[
+ e(t)=\cos(\theta(t))e(0)+\sin(\theta(t))Je(0).
+\]
+For continuous $a$, one may take $\theta(t)=\int_0^t a$.
+\end{lemma}
+\begin{proof}
+\leanok
+Differentiate $\cos(\theta)e-\sin(\theta)Je$. The derivative vanishes
+because $J^2=-1$, so the expression equals $e(0)$. Rotate back using
+$\cos^2\theta+\sin^2\theta=1$. The integral version follows by the
+fundamental theorem of calculus. No argument-function branch is used.
+\end{proof}
+
+\begin{proposition}[Global real coordinates for the chord angle]
+\label{prop:global-chord-angle}
+\lean{UlamFloating.IsUnitSpeedBoundary.chord_angle_coordinates}
+\leanok
+\uses{prop:boundary-chord-rotation,lem:rotation-reconstruction,lem:integral-coordinates,lem:integral-period-shift}
+Constant positive boundary chords admit an orientation and a strictly
+increasing $C^1$ order isomorphism $\theta:\R\to\R$, with $C^1$ inverse,
+$\theta(0)=0$, and $0<\theta'\leq2/\ell$. The chord vector is reconstructed
+by the preceding formula, and
+\[
+ \theta(t+kP)=\theta(t)+k\theta(P)\qquad(k\in\Z).
+\]
+\end{proposition}
+\begin{proof}
+\leanok
+The angular speed from the chord-rotation law is continuous, positive,
+and $P$-periodic. Apply integral coordinates, the reconstruction formula,
+and the integer-period integral identity.
+\end{proof}
+
+\begin{lemma}[Nonparallel chords from cyclic convex order]
+\label{lem:nonparallel-chords}
+\lean{UlamFloating.IsUnitSpeedBoundary.chord_not_parallel_of_interlaced,UlamFloating.IsUnitSpeedBoundary.chord_not_parallel_of_adjacent}
+\leanok
+\uses{lem:ordered-triangle}
+For $a<b<c<d<a+P$, the vectors $\gamma(d)-\gamma(b)$ and
+$\gamma(c)-\gamma(a)$ are not parallel. For $a<b<c<a+P$, the consecutive
+edge vectors are not parallel either.
+\end{lemma}
+\begin{proof}
+\leanok
+In the positive orientation, the two endpoints of an interlaced diagonal
+lie on opposite sides of the other diagonal. A parallel displacement
+would leave their signed side coordinates equal. For consecutive edges,
+parallelism would make the ordered triangle have zero area.
+\end{proof}
+
+\begin{lemma}[No intermediate return of a directed chord vector]
+\label{lem:chord-nonreturn}
+\lean{UlamFloating.IsUnitSpeedBoundary.chord_ne_of_interlaced,UlamFloating.IsUnitSpeedBoundary.chord_ne_of_disjoint,UlamFloating.IsUnitSpeedBoundary.chord_ne_of_adjacent,UlamFloating.IsUnitSpeedBoundary.chord_vector_ne_initial}
+\leanok
+\uses{lem:nonparallel-chords,lem:ordered-triangle}
+If $0<h$ and $2h<P$, then for $0<t<P$,
+\[
+ \gamma(t+h)-\gamma(t)\ne\gamma(h)-\gamma(0).
+\]
+Constant chord length is not required.
+\end{lemma}
+\begin{proof}
+\leanok
+Split according to whether the two chord intervals overlap, meet at an
+endpoint, are disjoint, or cross the period endpoint. Interlaced and
+adjacent cases use nonparallelism. In the disjoint case, equal directed
+vectors contradict the positive side inequalities for the cyclic edges.
+Periodicity reduces the wraparound cases to the same arguments.
+\end{proof}
+
+\begin{lemma}[Integral number of turns]
+\label{lem:rotation-integer-turns}
+\lean{UlamFloating.rotation_angle_eq_int_mul}
+\leanok
+If rotation through a real angle $\theta$ fixes a nonzero vector in an
+oriented Euclidean plane, then $\theta=2k\pi$ for some integer $k$.
+\end{lemma}
+\begin{proof}
+\leanok
+Take the inner product with the fixed vector. Orthogonality to its
+right-angle rotation gives $\cos\theta=1$. Use the exact characterization
+of the real angles with cosine one.
+\end{proof}
+
+\begin{lemma}[One turn from first return]
+\label{lem:angle-first-return}
+\lean{UlamFloating.angle_eq_two_pi_of_no_return}
+\leanok
+\uses{lem:rotation-integer-turns}
+Suppose a nonzero rotating vector has increasing real angular coordinates
+given by an order isomorphism, starts at angle zero, and first returns at
+$P>0$. Its angular increment at $P$ is exactly $2\pi$.
+\end{lemma}
+\begin{proof}
+\leanok
+The endpoint increment is a positive integer multiple of $2\pi$.
+If it exceeded $2\pi$, the inverse coordinate at $2\pi$ would give an
+intermediate return. Thus the integer is one.
+\end{proof}
+
+\begin{proposition}[Exactly one turn of constant boundary chords]
+\label{prop:chord-one-turn}
+\lean{UlamFloating.IsUnitSpeedBoundary.chord_angle_coordinates_one_turn}
+\leanok
+\uses{prop:global-chord-angle,lem:chord-nonreturn,lem:angle-first-return}
+When $0<h$ and $2h<P$, the constructed chord angle satisfies
+$\theta(P)=2\pi$ and $\theta(t+kP)=\theta(t)+2k\pi$ for every integer $k$.
+Its increasing $C^1$ coordinate properties and chord reconstruction remain valid.
+\end{proposition}
+\begin{proof}
+\leanok
+The chord vector is nonzero because its length is positive and is periodic
+because the boundary is periodic. Apply the nonreturn theorem and the
+abstract first-return result, then substitute into the integer shift law.
+\end{proof}
+
+\begin{definition}[Cyclic angle coordinates]
+\label{def:cyclic-angle-coordinates}
+\lean{UlamFloating.cyclicAngleCoordinates}
+\leanok
+\uses{def:sampling}
+For a real chord-direction lift $\theta$ and $h=P/n$, set
+\[
+ x_i(t)=\pi+\theta(t+ih)-\theta(t+(i+1)h),\qquad i\in\Z/n\Z.
+\]
+The coordinate at $i$ corresponds to the shared vertex of edges $i$ and
+$i+1$. Geometric range conditions and differential equations are proved
+separately; they are not part of the definition.
+\end{definition}
+
+\begin{lemma}[Regularity, periodicity, and cyclic shift of angle coordinates]
+\label{lem:cyclic-angle-api}
+\lean{UlamFloating.periodic_angle_difference,UlamFloating.cyclicAngleCoordinates_contDiff,UlamFloating.cyclicAngleCoordinates_periodic,UlamFloating.cyclicAngleCoordinates_rotate}
+\leanok
+\uses{def:cyclic-angle-coordinates,lem:finite-cycle}
+If $\theta$ is $C^1$ and $\theta(t+P)=\theta(t)+A$, each $x_i$ is $C^1$
+and $P$-periodic, and $x_{i+1}(t)=x_i(t+P/n)$, including cyclic wraparound.
+\end{lemma}
+\begin{proof}
+\leanok
+The fixed increment $A$ cancels in a difference of shifted angles.
+Compose with parameter translations and apply finite cyclic sampling.
+\end{proof}
+
+\begin{proposition}[Exact cyclic angle sum]
+\label{prop:cyclic-angle-sum}
+\lean{UlamFloating.cyclicAngleCoordinates_sum}
+\leanok
+\uses{def:cyclic-angle-coordinates}
+If $n>0$ and $\theta(t+P)=\theta(t)+A$, then $\sum_i x_i(t)=n\pi-A$.
+For a one-turn chord lift this is $(n-2)\pi$, hence $3\pi$ for five samples.
+\end{proposition}
+\begin{proof}
+\leanok
+The sum of angle differences telescopes from $\theta(t)$ to
+$\theta(t+P)$. The remaining $n$ constant summands contribute $n\pi$.
+\end{proof}
+
+\begin{proposition}[Convex range of the real angle coordinates]
+\label{prop:chord-angle-range}
+\lean{UlamFloating.IsUnitSpeedBoundary.chord_angle_increment_lt_pi,UlamFloating.IsUnitSpeedBoundary.angle_coordinate_pos_lt_pi}
+\leanok
+\uses{prop:global-chord-angle,lem:nonparallel-chords}
+For $0<h$ and $2h<P$, an increasing chord-direction lift satisfies
+$0<\theta(t+h)-\theta(t)<\pi$. Thus
+$0<\pi+\theta(t)-\theta(t+h)<\pi$.
+\end{proposition}
+\begin{proof}
+\leanok
+Strict monotonicity gives the lower bound. If the direction advanced by
+at least $\pi$, the inverse coordinate at $\theta(t)+\pi$ would produce
+an opposite chord vector before or at $t+h$. The chords would then be
+interlaced or adjacent and parallel, contradicting convexity.
+\end{proof}
+
+\begin{proposition}[Geometric extraction of periodic cyclic angle coordinates]
+\label{prop:cyclic-angle-extraction}
+\lean{UlamFloating.IsUnitSpeedBoundary.exists_cyclic_angle_coordinates}
+\leanok
+\uses{prop:chord-one-turn,lem:cyclic-angle-api,prop:cyclic-angle-sum,prop:chord-angle-range}
+For every $n\geq3$, constant-chord boundary data at increment $P/n$ admit
+a global chord-direction lift and cyclic coordinates $x_i$ that are $C^1$,
+$P$-periodic, lie in $(0,\pi)$, sum to $(n-2)\pi$, and satisfy
+$x_{i+1}(t)=x_i(t+P/n)$. The lift reconstructs the original chord vectors.
+\end{proposition}
+\begin{proof}
+\leanok
+Since $0<P/n$ and $2P/n<P$, construct the one-turn lift. Apply the
+regularity, periodicity, angle-sum, range, and cyclic-shift lemmas.
+The pentagon differential equation is established separately below.
+\end{proof}
+
+\begin{lemma}[Derivative of a planar rotation]
+\label{lem:rotation-derivative}
+\lean{UlamFloating.hasDerivAt_rotation,UlamFloating.angular_derivative_eq}
+\leanok
+\uses{lem:rotation-reconstruction}
+For any differentiable real angle, $(R_{\theta(t)}v)'=
+\theta'(t)JR_{\theta(t)}v$. If a nonzero curve satisfies both
+$e'=aJe$ and $e=R_\theta e(0)$, then $\theta'=a$.
+These statements hold in any oriented two-dimensional real inner product space.
+\end{lemma}
+\begin{proof}
+\leanok
+Differentiate the sine and cosine coefficients. Uniqueness of the derivative
+and injectivity of scalar multiplication by the nonzero vector $Je$ identify
+the angular coefficient.
+\end{proof}
+
+\begin{proposition}[Exact angular speed of a boundary chord lift]
+\label{prop:chord-angle-speed}
+\lean{UlamFloating.IsUnitSpeedBoundary.hasDerivAt_chord_rotation,UlamFloating.IsUnitSpeedBoundary.chord_angle_deriv,UlamFloating.IsUnitSpeedBoundary.chord_area_pos_of_angle_deriv_pos}
+\leanok
+\uses{lem:second-carousel,lem:rotation-derivative,prop:kinematic-extraction}
+In either orientation, a constant chord satisfies
+$e'=2\omega(\gamma',e)Je/\ell^2$. Every differentiable real lift
+reconstructing these chords therefore satisfies
+$\theta'=2\omega(\gamma',e)/\ell^2$.
+If $\theta'>0$, then $\omega(\gamma',e)>0$ in that same orientation.
+\end{proposition}
+\begin{proof}
+\leanok
+Differentiate the endpoints and apply the two local carousel laws.
+Compare this derivative with the derivative of the reconstructed rotation.
+The positive chord length allows division, and its square is positive.
+\end{proof}
+
+\begin{lemma}[Positive unit-vector and tangent--chord angles]
+\label{lem:positive-chord-angle}
+\lean{UlamFloating.exists_positive_unit_angle,UlamFloating.reflection_eq_rotation,UlamFloating.exists_positive_chord_angle}
+\leanok
+\uses{lem:second-carousel}
+For unit vectors $u,w$ with $\omega(u,w)>0$, there is
+$\alpha\in(0,\pi)$ such that
+$\cos\alpha=\ip uw$, $\sin\alpha=\omega(u,w)$, and
+$w=R_\alpha u$. Reflection of $u$ in the line through $w$ is $R_\alpha w$.
+Consequently the carousel laws with $\norm e=\ell>0$ and $\norm u=1$
+give $e/\ell=R_\alpha u$, $v=R_\alpha(e/\ell)$, and
+$\sin\alpha=\omega(u,e)/\ell$ whenever $\omega(u,e)>0$.
+\end{lemma}
+\begin{proof}
+\leanok
+Use $\alpha=\arccos\ip uw$. The identity
+$\ip uw^2+\omega(u,w)^2=1$ and positive area determine the sine and
+put the angle strictly in $(0,\pi)$. The oriented orthogonal decomposition
+reconstructs $w$. Substitute in the reflection formula, then normalize
+a positive-length chord to a unit vector.
+\end{proof}
+
+\begin{lemma}[Real addition of consecutive tangent--chord angles]
+\label{lem:tangent-angle-add}
+\lean{UlamFloating.rotation_angle_unique,UlamFloating.tangent_chord_angle_add}
+\leanok
+\uses{lem:positive-chord-angle,lem:rotation-integer-turns}
+Two angles in $(0,2\pi)$ inducing the same rotation of a nonzero vector
+are equal as real numbers. In particular, if consecutive tangent--chord
+angles $\alpha,\beta$ lie in $(0,\pi)$ and the chord direction increment
+$\delta$ lies in $(0,\pi)$, the reflection identities imply
+$\alpha+\beta=\delta$.
+\end{lemma}
+\begin{proof}
+\leanok
+Compose one rotation with the inverse of the other. The difference is
+an integer multiple of $2\pi$ and lies strictly between $-2\pi$ and $2\pi$,
+so it vanishes. Compose the two tangent--chord rotations and apply this
+uniqueness result; no full-turn ambiguity remains.
+\end{proof}
+
+\begin{proposition}[Periodic tangent angles and the geometric sine law]
+\label{prop:boundary-tangent-angles}
+\lean{UlamFloating.IsUnitSpeedBoundary.exists_tangent_chord_angles,UlamFloating.IsUnitSpeedBoundary.exists_tangent_chord_angles_with_rotation}
+\leanok
+\uses{prop:chord-angle-speed,lem:positive-chord-angle,lem:tangent-angle-add,prop:chord-angle-range}
+Suppose $0<h<P/2$ and an increasing $C^1$ chord lift $\theta$ has
+positive derivative. There is a $P$-periodic function
+$\alpha:\mathbb R\to(0,\pi)$ such that
+\[
+ \alpha(t)+\alpha(t+h)=\theta(t+h)-\theta(t),\qquad
+ \theta'(t)=\frac2\ell\sin\alpha(t).
+\]
+Both identities follow from the original boundary hypotheses. The stronger
+API also retains the geometric identity
+$e(t)/\ell=R_{\alpha(t)}\gamma'(t)$.
+\end{proposition}
+\begin{proof}
+\leanok
+Construct the positive tangent--chord angle at each time. Its cosine is
+the inner product of the unit tangent and normalized chord. These vectors
+are periodic; injectivity of cosine on $[0,\pi]$ proves periodicity of
+$\alpha$. The reflection law and the convex increment bound give the
+consecutive-sum identity. Substitute the sine formula in the exact
+angular speed.
+\end{proof}
+
+\begin{lemma}[Solving the five tangent-angle equations]
+\label{lem:five-angle-relations}
+\lean{UlamFloating.five_tangent_angle_eq,UlamFloating.five_chord_angle_speed,UlamFloating.hasDerivAt_five_angle_coordinate}
+\leanok
+\uses{prop:boundary-tangent-angles,prop:chord-one-turn}
+Let $h=P/5$ and $x(t)=\pi+\theta(t)-\theta(t+h)$.
+The periodic tangent-angle system and the one-turn identity imply
+\[
+ \alpha(t)=\pi-\bigl(\theta(t+2h)-\theta(t+h)\bigr)
+                 -\bigl(\theta(t+4h)-\theta(t+3h)\bigr).
+\]
+For a sine speed law $\theta'=k\sin\alpha$, it follows that
+\[
+ x'(t)=k\bigl(\sin(x(t+2h)+x(t+4h))
+                  -\sin(x(t+h)+x(t+3h))\bigr).
+\]
+The Lean lemmas allow any real scaling coefficient $k$.
+\end{lemma}
+\begin{proof}
+\leanok
+Solve the five real linear equations, using $\alpha(t+5h)=\alpha(t)$
+and $\theta(t+5h)=\theta(t)+2\pi$. Rewrite the resulting angle as
+$x(t+h)+x(t+3h)-\pi$. Apply $\sin(y-\pi)=-\sin y$ and differentiate
+the defining consecutive difference for $x$.
+\end{proof}
+
+\begin{definition}[The Euclidean curve of sampled angles]
+\label{def:cyclic-angle-curve}
+\lean{UlamFloating.cyclicAngleCurve}
+\leanok
+\uses{def:cyclic-angle-coordinates}
+Bundle the cyclic angle coordinates into the Euclidean vector
+$X(t)=(x_i(t))_{i\in\mathbb Z/n\mathbb Z}$, with its Euclidean norm.
+\end{definition}
+
+\begin{lemma}[Regularity, periodicity, and arbitrary cyclic shifts]
+\label{lem:angle-curve-api}
+\lean{UlamFloating.boundarySamples_add_nat,UlamFloating.cyclicAngleCurve_contDiff,UlamFloating.cyclicAngleCurve_periodic,UlamFloating.cyclicAngleCoordinates_add_nat}
+\leanok
+\uses{def:cyclic-angle-curve,lem:cyclic-angle-api,lem:finite-cycle}
+The curve $X$ is $C^1$ and $P$-periodic. For every natural number $k$,
+$x_{i+k}(t)=x_i(t+kP/n)$, including all cyclic wraps.
+The underlying sampling-shift lemma works for any periodic function into
+any target type and every nonempty finite cycle.
+\end{lemma}
+\begin{proof}
+\leanok
+Apply coordinatewise regularity and periodicity. Induct on $k$ using the
+one-step sample rotation identity; specialize to the periodic angle difference.
+\end{proof}
+
+\begin{theorem}[The geometric pentagon differential equation]
+\label{thm:geometric-pentagon-ode}
+\lean{UlamFloating.IsUnitSpeedBoundary.pentagon_angle_deriv}
+\leanok
+\uses{lem:five-angle-relations,lem:angle-curve-api,prop:boundary-tangent-angles}
+For the actual five sampled coordinates of a once-turning positive chord
+lift of a constant one-fifth chord boundary,
+\[
+ X'(t)=\frac2\ell F(X(t)),\qquad
+ F(X)_i=\sin(X_{i+2}+X_{i+4})-\sin(X_{i+1}+X_{i+3}).
+\]
+This equation is a conclusion of the boundary geometry.
+\end{theorem}
+\begin{proof}
+\leanok
+Construct the periodic tangent angles and apply the scalar five-angle
+derivative formula at each sampled time. Arbitrary cyclic shift identities
+convert time translations to finite-index additions. Coordinate projections
+and uniqueness of derivatives identify the Euclidean derivative.
+\end{proof}
+
+\begin{proposition}[Full geometric extraction of the pentagon angle solution]
+\label{prop:pentagon-angle-solution}
+\lean{UlamFloating.IsUnitSpeedBoundary.exists_pentagon_angle_solution}
+\leanok
+\uses{thm:geometric-pentagon-ode,prop:chord-one-turn,prop:cyclic-angle-sum,prop:chord-angle-range,lem:angle-curve-api}
+A constant one-fifth chord boundary admits an increasing real chord lift
+reconstructing its chord vectors, whose sampled curve $X$ is $C^1$,
+$P$-periodic, has coordinates in $(0,\pi)$ summing to $3\pi$, satisfies
+$X_{i+1}(t)=X_i(t+P/5)$, and solves $X'=(2/\ell)F(X)$.
+The formal statement retains the lift and its reconstruction of the given
+boundary, rather than merely asserting existence of an unrelated solution.
+\end{proposition}
+\begin{proof}
+\leanok
+Choose the one-turn lift and apply the proved regularity, range, sum,
+shift, and geometric differential-equation results to that same lift.
+\end{proof}
+
+\begin{lemma}[Constant sampled angles determine the increment]
+\label{lem:constant-sampled-angles}
+\lean{UlamFloating.cyclicAngleCoordinates_eq_initial_of_constant,UlamFloating.angle_increment_eq_of_constant_cyclic_curve,UlamFloating.cyclicAngleCoordinates_value_of_constant}
+\leanok
+\uses{def:cyclic-angle-curve,prop:cyclic-angle-sum}
+For any nonempty sampling cycle, if $X(t)$ is constant in time and
+$\theta(t+P)=\theta(t)+A$, then every sampled coordinate is
+$\pi-A/n$ and $\theta(t+P/n)-\theta(t)=A/n$.
+No geometric assumptions on the underlying functions are needed.
+\end{lemma}
+\begin{proof}
+\leanok
+Every sample is a time translate of sample zero. Time constancy therefore
+makes all coordinates equal. Their telescoping sum determines the common
+value and the chord increment.
+\end{proof}
+
+\begin{proposition}[Uniformly rotating velocity gives a circle]
+\label{prop:rotating-velocity-circle}
+\lean{UlamFloating.rotating_velocity_center_eq,UlamFloating.exists_circle_of_rotating_unit_velocity,UlamFloating.rotating_velocity_position_eq,UlamFloating.IsUnitSpeedBoundary.isDisk_of_rotating_velocity}
+\leanok
+\uses{lem:rotation-reconstruction,prop:disk}
+In an oriented two-dimensional real inner product space, suppose
+$\gamma'=v$ and $v'=aJv$ with constant $a\ne0$. Then
+$c=\gamma(t)+a^{-1}Jv(t)$ is independent of $t$, and
+\[
+ \gamma(t)-c=R_{at}\bigl(\gamma(0)-c\bigr).
+\]
+If $\norm{v(t)}=1$ and $a>0$, the curve lies on the circle of radius
+$a^{-1}$ about $c$. A body with such a unit-speed boundary is a disk.
+\end{proposition}
+\begin{proof}
+\leanok
+Differentiate the proposed center and use $J^2=-I$. Its derivative vanishes.
+Reconstruct $v$ from the rotation equation and substitute in the center
+identity to recover the position. Norm preservation gives the radius;
+the frontier-to-ball theorem identifies the body.
+\end{proof}
+
+\begin{lemma}[Rotation distances and regular polygons]
+\label{lem:rotation-distance-regularity}
+\lean{UlamFloating.rotation_dist_sq,UlamFloating.isRegularPolygon_of_rotation}
+\leanok
+\uses{def:polygon-geometry}
+For any vector $v$ in an oriented Euclidean plane,
+\[
+ \norm{R_a v-R_b v}^2=2\norm v^2\bigl(1-\cos(a-b)\bigr).
+\]
+Thus $p_i=c+R_{\phi+2\pi i/n}v$, with $n\geq3$ and $v\ne0$, is a
+regular polygon in the full distance-table sense used by this blueprint.
+\end{lemma}
+\begin{proof}
+\leanok
+Expand the squared norm using the inner product. The sine and cosine
+addition formulas give the distance identity; norm preservation gives
+the common positive circumradius.
+\end{proof}
+
+\begin{proposition}[One turn of a uniformly rotating boundary]
+\label{prop:uniform-rotation-one-turn}
+\lean{UlamFloating.IsUnitSpeedBoundary.rotation_period_eq_two_pi}
+\leanok
+\uses{lem:angle-first-return,lem:boundary-embedding}
+If a simple periodic boundary satisfies
+$\gamma(t)-c=R_{at}v$ with $a>0$ and $v\ne0$, then $aP=2\pi$.
+\end{proposition}
+\begin{proof}
+\leanok
+Apply the first-return theorem to the increasing angle $t\mapsto at$.
+Periodicity gives return at $P$. Injectivity on one half-open traversal
+excludes an earlier return, forcing exactly one full turn.
+\end{proof}
+
+\begin{proposition}[Regular samples of a uniformly rotating boundary]
+\label{prop:uniform-rotation-regular-samples}
+\lean{UlamFloating.IsUnitSpeedBoundary.boundarySamples_regular_of_rotating_velocity}
+\leanok
+\uses{prop:rotating-velocity-circle,prop:uniform-rotation-one-turn,lem:rotation-distance-regularity}
+For every $n\geq3$, rational samples of a unit-speed boundary whose tangent
+rotates at a constant positive rate form a regular polygon in their original
+cyclic ordering.
+\end{proposition}
+\begin{proof}
+\leanok
+Reconstruct the position about its fixed center and use $aP=2\pi$.
+At sample $i$ the rotation angle is $at+2\pi i/n$.
+Apply the complete rotation distance formula, which excludes star ordering.
+\end{proof}
+
+\begin{proposition}[A constant pentagon angle curve gives uniform tangent rotation]
+\label{prop:constant-fifth-velocity}
+\lean{UlamFloating.IsUnitSpeedBoundary.fifth_velocity_rotation_of_constant_angles}
+\leanok
+\uses{lem:constant-sampled-angles,prop:boundary-tangent-angles,lem:five-angle-relations}
+If the actual sampled-angle curve of a one-fifth chord boundary is constant,
+then its original unit tangent satisfies
+\[
+ \gamma''(t)=aJ\gamma'(t),\qquad
+ a=\frac2\ell\sin(\pi/5)>0.
+\]
+Existence of the second derivative is a conclusion, despite the initial
+boundary hypotheses requiring only $C^1$ regularity.
+\end{proposition}
+\begin{proof}
+\leanok
+The constant sampled vector forces all chord increments to be $2\pi/5$.
+The five tangent-angle equations then give $\alpha=\pi/5$ and the sine
+speed law gives $\theta'=a$. The retained tangent--chord rotation identity
+expresses $\gamma'$ as a fixed vector rotated by $\theta-\pi/5$.
+Differentiate this expression to obtain the stated equation.
+\end{proof}
+
+\begin{proposition}[The constant pentagon case is rigid]
+\label{prop:constant-fifth-rigidity}
+\lean{UlamFloating.IsUnitSpeedBoundary.isDisk_of_constant_fifth_angles,UlamFloating.IsUnitSpeedBoundary.regular_pentagons_of_constant_angles}
+\leanok
+\uses{prop:constant-fifth-velocity,prop:rotating-velocity-circle,prop:uniform-rotation-regular-samples}
+A constant geometric five-angle curve forces both disk rigidity and
+regularity of every sampled pentagon in its specified cyclic order.
+The supplied angle lift is the positive once-turning lift of the boundary
+chords; it is not an arbitrary solution of the abstract angle equation.
+\end{proposition}
+\begin{proof}
+\leanok
+The tangent rotates at the positive constant rate
+$(2/\ell)\sin(\pi/5)$. Apply the circle reconstruction and regular-sampling
+theorems. This proves the constant branch of the pentagon obstruction.
+\end{proof}
+
+\section{Invariants and the disk bridge}
+
+\begin{lemma}[Bilinear area-rate cancellation]
+\label{lem:area-rate}
+\lean{UlamFloating.sum_area_rate_eq_zero}
+\leanok
+For a skew real bilinear form $B$, a permutation $s$ of a finite index
+set, and vectors with $v_i+v_{s(i)}=a_i(p_{s(i)}-p_i)$,
+\[
+ \sum_i\bigl(B(v_i,p_{s(i)})+B(p_i,v_{s(i)})\bigr)=0.
+\]
+\end{lemma}
+\begin{proof}
+\leanok
+Skewness gives $B(x,x)=0$. Pair each velocity sum with its edge.
+The summand becomes $B(v_i,p_i)-B(v_{s(i)},p_{s(i)})$.
+Reindex the second sum by $s$. This needs neither convexity nor equal
+edge lengths, and works in any dimension.
+\end{proof}
+
+\begin{definition}[Signed polygon moments and area centroid]
+\label{def:moments}
+\lean{UlamFloating.polygonSignedArea,UlamFloating.polygonFirstMoment,UlamFloating.polygonCentroid,UlamFloating.planarArea,UlamFloating.laminaCentroid}
+\leanok
+\uses{def:polygon-geometry}
+For an orientation and a finite successor permutation, define signed area
+$A$ and signed first moment $M$ by the formulas below, and signed centroid
+as $A^{-1}M$. For a measurable planar set, define its area using Lebesgue
+measure and its lamina centroid as the normalized integral of position.
+Geometric applications establish positive finite area or nonzero signed
+area before using these normalized expressions.
+\end{definition}
+
+\begin{proposition}[Signed-area conservation]
+\label{prop:area}
+\lean{UlamFloating.sum_bilinear_apply_const_of_midpoint_parallel,UlamFloating.IsCarousel.polygonSignedArea_eq,UlamFloating.carousel_area}
+\leanok
+\uses{def:carousel,lem:area-rate,def:moments}
+For differentiable moving vertices in a real normed space, the cyclic sum
+of a continuous skew bilinear form is constant under the midpoint-parallel
+law. In particular, the signed area of a planar carousel is constant.
+\end{proposition}
+\begin{proof}
+\leanok
+Differentiate each bilinear summand and sum the derivatives. The area-rate
+identity makes the derivative zero everywhere. The mean value theorem
+gives constancy. Convexity and equal edge lengths are not needed here.
+\end{proof}
+
+\begin{lemma}[First-moment edge identities]
+\label{lem:moment-rate}
+\lean{UlamFloating.areaForm_smul_eq_rotation,UlamFloating.areaForm_smul_eq_velocity_difference,UlamFloating.moment_edge_rate,UlamFloating.sum_moment_rate_eq_zero}
+\leanok
+\uses{lem:orthogonal,def:polygon-geometry}
+Write $\omega$ for the oriented area form and $J$ for the positive
+right-angle rotation. For an edge $e=q-p$ and velocities $u,v$ satisfying
+$u+v=ae$ and $\ip e{v-u}=0$, the derivative-shaped expression is
+\[
+ (\omega(u,q)+\omega(p,v))(p+q)+\omega(p,q)(u+v)
+ =2\omega(u,p)p-2\omega(v,q)q
+   +\tfrac12\norm e^2(Jv-Ju).
+\]
+For equal-length edges its sum over any finite successor permutation is zero.
+\end{lemma}
+\begin{proof}
+\leanok
+Use the planar identity
+$\omega(u,e)e=\norm e^2 Ju-\ip eu\,Je$.
+The two velocity laws give $2\ip eu=a\norm e^2$, hence
+$\omega(u,e)e=-\tfrac12\norm e^2(Jv-Ju)$.
+Bilinearity and the midpoint law give the displayed edge identity.
+For common edge length $\ell$, each summand is $F_i-F_{s(i)}$, where
+$F_i=2\omega(v_i,p_i)p_i-\tfrac12\ell^2Jv_i$; reindex to cancel.
+\end{proof}
+
+\begin{proposition}[First moment and signed centroid]
+\label{prop:invariants}
+\lean{UlamFloating.IsCarousel.sum_areaForm_smul_eq,UlamFloating.IsCarousel.polygonFirstMoment_eq,UlamFloating.IsCarousel.polygonCentroid_eq,UlamFloating.carousel_firstMoment,UlamFloating.carousel_centroid}
+\leanok
+\uses{def:carousel,prop:area,lem:moment-rate,def:moments}
+The signed first moment of a planar carousel is constant.
+Its signed centroid is fixed. These statements quantify over any finite
+successor permutation; the moment proof works in every oriented real
+inner product space of dimension two. Geometric interpretation of the
+centroid requires nonzero signed area.
+\end{proposition}
+\begin{proof}
+\leanok
+Differentiate finite sums using mathlib's oriented area form:
+\[
+ A=\tfrac12\sum_i\det(p_i,p_{s(i)}),\qquad
+ M=\tfrac16\sum_i\det(p_i,p_{s(i)})(p_i+p_{s(i)}).
+\]
+The first-moment edge identity makes $M'=0$. The mean value theorem gives
+constancy, and constancy of $A$ and $M$ gives constancy of $A^{-1}M$.
+\end{proof}
+
+\begin{lemma}[Signed area as a sum of edge triangles]
+\label{lem:edge-origin}
+\lean{UlamFloating.sum_bilinear_edge_origin}
+\leanok
+For every skew real bilinear form $B$, finite successor permutation $s$,
+vertices $p_i$, and origin $c$,
+\[
+ \sum_i B(p_{s(i)}-p_i,c-p_i)=\sum_i B(p_i,p_{s(i)}).
+\]
+This identity holds in any real vector space.
+\end{lemma}
+\begin{proof}
+\leanok
+Expand each summand by bilinearity and skew symmetry. The terms involving
+$c$ cancel after reindexing the finite sum by the successor permutation.
+\end{proof}
+
+\begin{proposition}[Nonzero signed area of a strictly convex polygon]
+\label{prop:polygon-area-nonzero}
+\lean{UlamFloating.polygonSignedArea_neg_orientation,UlamFloating.polygonSignedArea_pos_of_edge_sides,UlamFloating.IsStrictlyConvexPolygon.polygonSignedArea_ne_zero}
+\leanok
+\uses{lem:edge-origin,def:polygon-geometry,def:moments}
+The signed area is positive in an orientation satisfying the strict
+edge-side inequalities. Reversing orientation negates it. Thus a strictly
+convex polygon has nonzero signed area in either orientation.
+\end{proposition}
+\begin{proof}
+\leanok
+Choose a vertex as the origin in the edge-triangle identity. Every
+edge contributes nonnegatively, and an edge not incident to that vertex
+contributes positively. Such an edge exists because $n\geq3$.
+There are exactly two orientations, related by negation of the area form.
+\end{proof}
+
+\begin{lemma}[Alternating area-vector identity]
+\label{lem:area-vector-triple}
+\lean{UlamFloating.areaForm_smul_three}
+\leanok
+In every oriented Euclidean plane,
+\[
+ \omega(a,b)c=\omega(a,c)b+\omega(c,b)a.
+\]
+\end{lemma}
+\begin{proof}
+\leanok
+For nonzero $a$, expand $b$ and $c$ in the basis $(a,Ja)$ and use
+bilinearity. If $a=0$, all terms vanish.
+\end{proof}
+
+\begin{proposition}[Translation of polygon moments]
+\label{prop:moment-translation}
+\lean{UlamFloating.sum_areaForm_translate,UlamFloating.sum_moment_translate,UlamFloating.polygonSignedArea_translate,UlamFloating.polygonFirstMoment_translate,UlamFloating.polygonCentroid_translate}
+\leanok
+\uses{lem:area-vector-triple,def:moments}
+For any finite successor permutation, translating every vertex by $c$
+preserves signed area $A$ and changes signed first moment $M$ to $M+Ac$.
+If $A\ne0$, the signed centroid translates by $c$.
+\end{proposition}
+\begin{proof}
+\leanok
+Expand the area form and cancel differences under the successor
+permutation. For first moments, the alternating area-vector identity
+reduces the extra terms to three times the shoelace sum times $c$,
+plus a telescoping sum. Multiply by $1/6$ and divide by $A$.
+\end{proof}
+
+\begin{lemma}[Centered moment of an equilateral cyclic polygon]
+\label{lem:cyclic-moment-zero}
+\lean{UlamFloating.areaForm_smul_add_of_norm_sq_eq,UlamFloating.sum_moment_eq_zero_of_norm_sq_eq}
+\leanok
+\uses{lem:moment-rate}
+If $\norm a^2=\norm b^2=R$ and $\norm{b-a}=\ell$, then
+\[
+ \omega(a,b)(a+b)=(2R-\ell^2/2)(Ja-Jb).
+\]
+Thus equal-radius vertices with equal-length edges have zero first moment
+about the origin, for any finite successor permutation.
+\end{lemma}
+\begin{proof}
+\leanok
+The squared edge length gives $\ip ab=R-\ell^2/2$. Apply the planar
+area-rotation identity to each endpoint. Sum the resulting differences
+of rotated vertices; the common coefficient factors out and the sum vanishes.
+\end{proof}
+
+\begin{proposition}[Circumcenter as signed centroid]
+\label{prop:cyclic-centroid}
+\lean{UlamFloating.polygonCentroid_eq_of_equidistant}
+\leanok
+\uses{prop:moment-translation,lem:cyclic-moment-zero}
+An equilateral cyclic polygon with nonzero signed area has signed
+centroid equal to its circumcenter. Convexity and regular labeling are
+unnecessary for this statement.
+\end{proposition}
+\begin{proof}
+\leanok
+Translate the circumcenter to the origin. The centered first moment is
+zero. Translate the normalized centroid back using nonzero signed area.
+\end{proof}
+
+\begin{proposition}[Geometric centroid identification: statement formalized]
+\label{prop:geometric-centroid}
+\lean{UlamFloating.polygonCentroidStatement}
+\uses{def:moments,def:polygon-geometry,prop:polygon-area-nonzero}
+A strictly convex polygon has nonzero signed area, and its signed centroid
+equals the lamina centroid of the convex hull of its vertices, in either
+orientation.
+\end{proposition}
+The lamina centroid is generally not the average of the vertices.
+Nonvanishing of signed area is proved above. The centroid identification
+still requires a triangulation and integral proof.
+Boundary data permit both orientations, so positivity of signed area
+must not be assumed silently.
+
+\begin{lemma}[Reconstruction from a spherical frontier]
+\label{lem:ball-frontier}
+\lean{UlamFloating.subset_closedBall_of_frontier_subset,UlamFloating.eq_closedBall_of_frontier_subset_sphere}
+\leanok
+In a nontrivial real normed space, a nonempty compact set lies in any
+closed ball containing its frontier. If it has nonempty interior and its
+frontier is contained in a sphere of positive radius, it equals the closed
+ball. Convexity is not required.
+\end{lemma}
+\begin{proof}
+\leanok
+Maximize distance from the ball center on the compact set. A maximizer
+cannot be an interior point: the set lies in the closed ball with this
+maximal radius, whose interior is the open ball. Thus the maximum occurs
+on the frontier, proving containment.
+For the second claim, the open ball contains no frontier point. Partition
+it into its intersections with the interior of the set and the complement
+of the set. These are disjoint open pieces, and the first is nonempty.
+Connectedness forces the entire open ball into the set. Taking closures
+gives the opposite inclusion.
+\end{proof}
+
+\begin{proposition}[Circle boundary to disk]
+\label{prop:disk}
+\lean{UlamFloating.IsUnitSpeedBoundary.eq_closedBall,UlamFloating.circle_boundary_disk,UlamFloating.IsUnitSpeedBoundary.isDisk_of_norm_sq}
+\leanok
+\uses{def:boundary,def:perimetral,lem:ball-frontier}
+If boundary data satisfy $\norm{\gamma(t)-c}=r>0$ for all $t$, then
+$K=\overline B(c,r)$. Equivalently, a positive constant squared distance
+$\norm{\gamma(t)-c}^2=q>0$ gives a disk of radius $\sqrt q$.
+\end{proposition}
+\begin{proof}
+\leanok
+The range condition turns the norm equality into containment of the
+frontier in the sphere. Apply the compact-set reconstruction theorem to
+obtain equality of bodies.
+\end{proof}
+
+\section{A reusable period obstruction}
+
+\begin{lemma}[Fourier energy on one interval]
+\label{lem:fourier-energy}
+\lean{UlamFloating.summable_sq_fourierCoeff,UlamFloating.tsum_sq_fourierCoeff_continuous,UlamFloating.hasSum_sq_fourierCoeffOn}
+\leanok
+For a continuous complex-valued function on $[0,T]$, $T>0$, with
+matching endpoint values, the squared Fourier coefficients are summable and
+\[
+ \sum_{k\in\Z}|\widehat f(k)|^2=\frac1T\int_0^T|f(t)|^2\,dt.
+\]
+The normalization agrees with mathlib's \texttt{fourierCoeffOn}.
+\end{lemma}
+\begin{proof}
+\leanok
+Lift the function continuously to the additive circle. Apply mathlib's
+Fourier Hilbert basis and Parseval identity, then convert its normalized
+Haar integral to an interval integral. The continuous-function version
+also removes the intermediate almost-everywhere quotient.
+\end{proof}
+
+\begin{lemma}[Nonzero Fourier-mode energy estimate]
+\label{lem:fourier-mode}
+\lean{UlamFloating.fourierCoeffOn_energy_le}
+\leanok
+If $f'=g$ on $[0,T]$, $g$ is interval integrable, and $f(0)=f(T)$,
+then for every nonzero integer $k$,
+\[
+ (2\pi)^2|\widehat f(k)|^2\leq T^2|\widehat g(k)|^2.
+\]
+\end{lemma}
+\begin{proof}
+\leanok
+Integration by parts gives $2\pi i k\widehat f(k)=T\widehat g(k)$.
+Take squared norms and use $k^2\geq1$.
+\end{proof}
+
+\begin{proposition}[Complex periodic Wirtinger inequality]
+\label{prop:wirtinger-complex}
+\lean{UlamFloating.wirtinger_complex}
+\leanok
+\uses{lem:fourier-energy,lem:fourier-mode}
+Suppose $f,g:[0,T]\to\mathbb C$ are continuous, $f'=g$, both have
+matching endpoint values, and $\int_0^T f=0$. Then
+\[
+ (2\pi)^2\int_0^T|f|^2\leq T^2\int_0^T|g|^2.
+\]
+\end{proposition}
+\begin{proof}
+\leanok
+The mean-zero hypothesis removes the zero Fourier coefficient. Sum the
+nonzero-mode estimates using summability and Parseval, then cancel the
+positive normalization factor $1/T$.
+\end{proof}
+
+\begin{proposition}[Finite-dimensional periodic Wirtinger inequality]
+\label{prop:wirtinger-euclidean}
+\lean{UlamFloating.wirtinger_euclidean}
+\leanok
+\uses{prop:wirtinger-complex}
+The same inequality, with squared Euclidean norms, holds for functions
+into any finite-dimensional real Euclidean space under the same
+continuity, derivative, endpoint, and mean-zero hypotheses.
+\end{proposition}
+\begin{proof}
+\leanok
+Compose with each coordinate projection and the real embedding into
+$\mathbb C$. Apply the scalar theorem and sum over the finite coordinate
+set. Finite sums commute with the interval integral, and the sum of
+squared coordinate norms is the squared Euclidean norm.
+\end{proof}
+
+\begin{lemma}[Periodicity, mean, and positive velocity energy]
+\label{lem:periodic-energy}
+\lean{UlamFloating.periodic_deriv,UlamFloating.integral_deriv_eq_zero_of_periodic,UlamFloating.integral_norm_sq_pos_of_periodic,UlamFloating.integral_deriv_norm_sq_pos}
+\leanok
+Derivatives preserve periodicity. The derivative of a periodic $C^1$
+curve has zero integral over a period. A nonzero continuous periodic
+function has positive squared-norm integral over a positive period;
+in particular, so does the velocity of a nonconstant $C^1$ curve.
+These lemmas apply to general real normed spaces, with completeness
+required for the vector-valued fundamental theorem of calculus.
+\end{lemma}
+\begin{proof}
+\leanok
+Differentiate the time-shift identity for periodicity and apply the
+fundamental theorem of calculus for the mean. A nonzero value can be
+moved into one period by periodicity; continuity makes its energy
+integral positive. An identically zero derivative would make the
+original curve constant by the mean value theorem.
+\end{proof}
+
+\begin{proposition}[Period bound from a derivative estimate]
+\label{prop:period-bound}
+\lean{UlamFloating.period_ge_of_derivative_bound,UlamFloating.period_bound}
+\leanok
+\uses{prop:wirtinger-euclidean,lem:periodic-energy}
+Let $x:\R\to\R^d$ be nonconstant, $C^2$, and $T$-periodic, with $T>0$.
+If $L>0$ and $\norm{x''(t)}\leq L\norm{x'(t)}$ for all $t$, then
+$T\geq 2\pi/L$.
+\end{proposition}
+\begin{proof}
+\leanok
+Put $y=x'$. Its integral over a period is zero, and it is periodic.
+The vector-valued periodic Wirtinger inequality gives
+\[
+ 0<\int_0^T\norm y^2\leq
+ \frac{T^2}{4\pi^2}\int_0^T\norm{y'}^2\leq
+ \frac{T^2L^2}{4\pi^2}\int_0^T\norm y^2.
+\]
+Positivity follows from nonconstancy and continuity of the derivative.
+Cancel the positive integral and take nonnegative square roots.
+The stronger library theorem only requires the derivative estimate on
+$[0,T]$ and allows any finite coordinate index type.
+\end{proof}
+
+\begin{proposition}[Period obstruction for an autonomous equation]
+\label{prop:ode-period-bound}
+\lean{UlamFloating.period_ge_of_vectorField_derivative_bound}
+\leanok
+\uses{prop:period-bound}
+Let a nonconstant $C^2$ curve solve $x'=F(x)$ with positive period $T$.
+If $F$ is differentiable along the trajectory on $[0,T]$ and
+$\norm{DF(x(t))}\leq L$ there, with $L>0$, then $T\geq2\pi/L$.
+\end{proposition}
+\begin{proof}
+\leanok
+The chain rule gives $x''=DF(x)x'$. The operator-norm bound yields
+$\norm{x''}\leq L\norm{x'}$, so the preceding theorem applies.
+\end{proof}
+
+Finite-cycle energy bounds now give the exact pentagon-equation estimate
+below. Periodic convex angle coordinates and their five-angle differential
+equation are now extracted from boundary data. To complete the fifth-density
+proof, the least-period and multiplicity results below must be combined with
+a stronger geometric or period obstruction, including exceptional
+configurations. Yorke's classical Lipschitz period theorem motivates the
+general approach; its more general hypotheses require additional analysis.
+\href{https://msekce.karlin.mff.cuni.cz/~prazak/uceni/Odr2/Cviceni/Yorke-period.pdf}{Yorke, 1969, original paper}.
+
+\begin{lemma}[Energy of differences along a permutation]
+\label{lem:cycle-difference-energy}
+\lean{UlamFloating.sum_sq_sub_perm_le}
+\leanok
+For a real family on any finite index set and any permutation $s$,
+\[
+ \sum_i(u_i-u_{s(i)})^2\leq4\sum_i u_i^2.
+\]
+\end{lemma}
+\begin{proof}
+\leanok
+Use $(a-b)^2\leq2a^2+2b^2$ and reindex one of the sums.
+\end{proof}
+
+\begin{lemma}[Five-cycle pair-sum energy]
+\label{lem:pentagon-pair-energy}
+\lean{UlamFloating.pentagon_pair_energy_identity,UlamFloating.pentagon_pair_energy_le,UlamFloating.pentagon_weighted_difference_energy_le}
+\leanok
+\uses{lem:cycle-difference-energy}
+For five cyclic real coordinates,
+\[
+ \sum_i(u_{i+2}+u_{i+4})^2+\sum_i(u_i+u_{i+1})^2
+ =3\sum_i u_i^2+\Bigl(\sum_i u_i\Bigr)^2.
+\]
+If $\sum_i u_i=0$, the first energy is at most $3\sum_i u_i^2$.
+Multiplying each pair sum by a scalar of absolute value at most one,
+then taking cyclic differences, gives energy at most $12\sum_i u_i^2$.
+\end{lemma}
+\begin{proof}
+\leanok
+Expand the identity: the two pair families account for all ten unordered
+pairs. Drop the nonnegative second energy, apply the diagonal contraction,
+and then the permutation-difference estimate.
+\end{proof}
+
+\begin{definition}[Five-angle vector field]
+\label{def:pentagon-angle-field}
+\lean{UlamFloating.pentagonAngleField}
+\leanok
+For $x\in\R^5$ with cyclic indices, define
+\[
+ F_i(x)=\sin(x_{i+2}+x_{i+4})-\sin(x_{i+1}+x_{i+3}).
+\]
+This is the side-length-two angle equation. The following results concern
+solutions of this explicitly specified equation. The geometric coordinates
+constructed above have not yet been proved to solve it.
+\end{definition}
+
+\begin{lemma}[Regularity and zero-sum velocity of the angle field]
+\label{lem:pentagon-field-api}
+\lean{UlamFloating.pentagonAngleField_apply,UlamFloating.contDiff_pentagonAngleField,UlamFloating.pentagonAngleField_sum}
+\leanok
+\uses{def:pentagon-angle-field}
+The inverse-successor definition agrees with the displayed cyclic formula.
+The vector field is smooth (indeed analytic), and $\sum_iF_i(x)=0$ for every $x$.
+\end{lemma}
+\begin{proof}
+\leanok
+Check the five cyclic indices. Coordinate sums and sine are analytic.
+The two sine sums coincide after reindexing by the inverse successor.
+\end{proof}
+
+\begin{lemma}[One step of regularity for an autonomous solution]
+\label{lem:ode-regularity}
+\lean{UlamFloating.contDiff_two_of_deriv_eq}
+\leanok
+In any real normed space, a $C^1$ solution of $x'=F(x)$ with $F$ of class
+$C^1$ is $C^2$.
+\end{lemma}
+\begin{proof}
+\leanok
+The derivative equals the $C^1$ composition $F\circ x$.
+Use the characterization of $C^2$ regularity by its first derivative.
+\end{proof}
+
+\begin{proposition}[Acceleration estimate for the five-angle equation]
+\label{prop:pentagon-acceleration}
+\lean{UlamFloating.pentagonAngleField_acceleration_bound}
+\leanok
+\uses{lem:pentagon-field-api,lem:ode-regularity,lem:pentagon-pair-energy}
+Every $C^1$ solution of $x'=F(x)$ satisfies
+$\norm{x''}\leq2\sqrt3\norm{x'}$ everywhere.
+\end{proposition}
+\begin{proof}
+\leanok
+First obtain $C^2$ regularity. Put $u=x'$ and
+$w_i=\cos(x_{i+2}+x_{i+4})(u_{i+2}+u_{i+4})$.
+Differentiating the equation gives $x''_i=w_i-w_{i-1}$.
+The velocity sum is zero and each cosine has square at most one.
+The weighted five-cycle estimate gives $\norm{x''}^2\leq12\norm{x'}^2$.
+Take nonnegative square roots.
+\end{proof}
+
+\begin{proposition}[Exact lower bound for pentagon-equation periods]
+\label{prop:pentagon-period}
+\lean{UlamFloating.pentagonAngleField_period_ge,UlamFloating.pentagonAngleField_period_ge_scaled,UlamFloating.pentagonAngleField_period_ge_of_length}
+\leanok
+\uses{prop:pentagon-acceleration,prop:period-bound}
+Every positive period $T$ of a nonconstant $C^1$ solution of $x'=F(x)$
+satisfies $T\geq\pi/\sqrt3$. More generally, for $x'=kF(x)$ with $k>0$,
+one has $T\geq\pi/(k\sqrt3)$. Thus the side-length-$\ell$ equation
+$x'=(2/\ell)F(x)$ has $T\geq\ell\pi/(2\sqrt3)$.
+\end{proposition}
+\begin{proof}
+\leanok
+Apply the general period theorem with $L=2\sqrt3$.
+For a positive time scale $k$, set $y(s)=x(s/k)$. Then $y'=F(y)$,
+$y$ is nonconstant, and $kT$ is a period. This proves the scaled estimate
+without an implicit normalization. No decimal bounds or monotonicity
+conjectures enter the proof.
+\end{proof}
+
+\section{The three rigidity targets}
+
+\begin{lemma}[Triangle carousel center and radius]
+\label{lem:triangle-carousel}
+\lean{UlamFloating.inner_edges_of_equilateral,UlamFloating.triangle_velocity_sum_eq_zero,UlamFloating.norm_sub_triangle_average_sq,UlamFloating.equilateral_norm_sub_average_sq,UlamFloating.IsCarousel.sum_three_eq,UlamFloating.IsCarousel.triangle_fixed_center}
+\leanok
+\uses{def:carousel,lem:orthogonal}
+Every three-vertex carousel in a real inner product space has a fixed
+vertex average $c$, and $\norm{p_i(t)-c}^2=\ell^2/3$.
+This needs neither convexity nor a lamina-centroid identification.
+\end{lemma}
+\begin{proof}
+\leanok
+Its edge vectors $e,f,g$ sum to zero and have equal norm $\ell$;
+their pairwise inner products are $-\ell^2/2$.
+Write the midpoint laws as $u+v=ae$, $v+w=bf$, $w+u=cg$.
+Pair $v-u=bf-cg$ with $e$, and $w-v=cg-ae$ with $f$.
+The rigid-edge derivative and $\ell>0$ imply $a=b=c$, whence
+$u+v+w=0$. The mean value theorem fixes the vertex sum.
+Finally, in any real inner product space,
+\[
+ \left\|a-\tfrac13(a+b+c)\right\|^2
+ =\frac{2\norm{a-b}^2+2\norm{a-c}^2-\norm{b-c}^2}{9}.
+\]
+Apply the equal-length identities to obtain the radius.
+\end{proof}
+
+\begin{proposition}[Triangle reduction]
+\label{prop:triangle}
+\lean{UlamFloating.triangle_reduction}
+\leanok
+\uses{prop:kinematic-extraction,lem:triangle-carousel}
+The extracted triangle has a fixed center $c$ and
+$\norm{p_i(t)-c}^2=\ell^2/3$.
+\end{proposition}
+\begin{proof}
+\leanok
+Apply the derived carousel laws to the three samples and then the
+triangle-carousel fixed-center theorem. Neither cyclic polygon convexity
+nor a lamina-centroid theorem is needed for this route.
+\end{proof}
+
+\begin{lemma}[Assembly for one third: conditional]
+\label{lem:third-assembly}
+\lean{UlamFloating.IsUnitSpeedBoundary.isDisk_of_triangle_carousel,UlamFloating.triangle_reduction_of_carousel_extraction,UlamFloating.third_rigidity_of_triangle_reduction,UlamFloating.third_rigidity_of_carousel_extraction}
+\leanok
+\uses{lem:triangle-carousel,prop:disk,def:perimetral}
+If the three boundary samples form a carousel, the body is a disk.
+Consequently the carousel-extraction statement implies the triangle
+reduction and $\mathcal R(1/3)$. The triangle-reduction statement alone
+also implies $\mathcal R(1/3)$. These are implications with explicit
+premises, not proofs of extraction or unconditional rigidity.
+\end{lemma}
+\begin{proof}
+\leanok
+Take the fixed center, evaluate the radius formula at sample zero,
+and apply the squared-distance version of the disk bridge.
+\end{proof}
+
+\begin{theorem}[Geometric rigidity at density $1/3$]
+\label{thm:third}
+\lean{UlamFloating.third_rigidity}
+\leanok
+\uses{prop:triangle,lem:third-assembly}
+$\mathcal R(1/3)$ holds.
+\end{theorem}
+\begin{proof}
+\leanok
+Use the proved triangle reduction in the final assembly. The positive
+squared radius is $\ell^2/3$, and sample zero is the entire boundary curve.
+\end{proof}
+
+\begin{lemma}[Equilateral quadrilaterals are parallelograms]
+\label{lem:quadrilateral-geometry}
+\lean{UlamFloating.inner_sub_midpoint,UlamFloating.norm_sub_midpoint_sq,UlamFloating.eq_or_eq_neg_of_norm_eq_of_smul,UlamFloating.parallelogram_of_equilateral}
+\leanok
+\uses{lem:midpoint-extraction}
+In the plane, an equilateral quadrilateral with distinct opposite
+vertices satisfies $a+c=b+d$. Polygon order need not be assumed.
+\end{lemma}
+\begin{proof}
+\leanok
+Let $m=(a+c)/2$. Both $b-m$ and $d-m$ are perpendicular to $c-a$,
+by the equal-distance identity for a perpendicular bisector. They have
+the same norm, by the squared-distance formula for a midpoint.
+In dimension two they are parallel, hence equal or opposite. Distinctness
+excludes equality, giving $b+d=2m=a+c$.
+\end{proof}
+
+\begin{lemma}[Nonparallel parallelogram edges]
+\label{lem:square-nondegenerate}
+\lean{UlamFloating.exists_smul_of_areaForm_eq_zero,UlamFloating.areaForm_ne_zero_of_norm_eq,UlamFloating.areaForm_ne_zero_of_parallelogram}
+\leanok
+\uses{lem:planar-decomposition,lem:quadrilateral-geometry}
+A vanishing area form with a nonzero first vector implies parallelism.
+Equal-length vectors that are neither equal nor opposite have nonzero
+oriented area. Thus an equilateral parallelogram with distinct opposite
+vertices has nonparallel adjacent edges.
+\end{lemma}
+\begin{proof}
+\leanok
+Use planar decomposition to express the second vector as a scalar
+multiple of the first. Equal norms force that scalar to be $1$ or $-1$.
+For the parallelogram either choice would identify opposite vertices.
+\end{proof}
+
+\begin{lemma}[Parallelogram carousel velocity equations]
+\label{lem:square-velocity}
+\lean{UlamFloating.sum_four_velocity_eq_zero,UlamFloating.opposite_velocities_of_sum_eq_zero,UlamFloating.inner_edges_eq_zero_of_carousel_laws}
+\leanok
+\uses{lem:square-nondegenerate,lem:orthogonal}
+For edges $e,f,-e,-f$ with nonzero oriented area, the four midpoint
+equations force total vertex velocity zero. If also the differentiated
+parallelogram identity holds, opposite velocities are opposite. The
+rigid-edge equations and a nonzero vertex velocity then force $\ip ef=0$.
+\end{lemma}
+\begin{proof}
+\leanok
+Write $u_i+u_{i+1}=a_i e_i$. Alternating the four equations gives
+$(a_0-a_2)e+(a_3-a_1)f=0$. Pair with the area form to get $a_0=a_2$,
+then add the two opposite midpoint equations to get total velocity zero.
+Together with $u_0+u_2=u_1+u_3$, this gives
+$u_2=-u_0$ and $u_3=-u_1$. Hence
+$u_0+u_1=a_0e$ and $u_1-u_0=a_1f$.
+The rigid-edge equations give $a_0\ip ef=a_1\ip ef=0$.
+If $\ip ef\neq0$, both coefficients vanish and $u_0=0$, a contradiction.
+\end{proof}
+
+\begin{proposition}[Four-vertex carousel motion]
+\label{prop:square-motion}
+\lean{UlamFloating.IsCarousel.four_parallelogram,UlamFloating.IsCarousel.sum_four_deriv_eq_zero,UlamFloating.IsCarousel.sum_four_eq,UlamFloating.IsCarousel.four_edges_inner_eq_zero}
+\leanok
+\uses{def:carousel,lem:quadrilateral-geometry,lem:square-velocity}
+A four-vertex planar carousel whose vertices remain distinct has a fixed
+vertex sum and perpendicular adjacent edges at every time.
+\end{proposition}
+\begin{proof}
+\leanok
+At every time the equilateral quadrilateral is a nondegenerate parallelogram.
+Apply the velocity cancellation, then the mean value theorem to fix the sum.
+Differentiate the parallelogram identity and apply the right-angle calculation.
+\end{proof}
+
+\begin{lemma}[Square radius and full distance formula]
+\label{lem:square-metric}
+\lean{UlamFloating.square_norm_sub_average_sq,UlamFloating.square_distance_sq,UlamFloating.square_cosine_table,UlamFloating.regularPolygon_four_of_parallelogram}
+\leanok
+\uses{def:polygon-geometry}
+An equilateral parallelogram with perpendicular adjacent edges has
+squared circumradius $\ell^2/2$ about its vertex average. Its squared
+pairwise distances are $0$ at equal indices, $2\ell^2$ at opposite
+indices, and $\ell^2$ at adjacent indices. It satisfies the full
+regular-polygon distance formula in its given cyclic order.
+\end{lemma}
+\begin{proof}
+\leanok
+The centered vertices are the four vectors $\pm(e+f)/2$ and $\pm(e-f)/2$.
+Use $\norm e=\norm f=\ell$ and $\ip ef=0$ to compute their norms and
+all pairwise distances. The sixteen index pairs match
+$1-\cos(2\pi(i-j)/4)$ by the exact values of cosine at multiples of
+$\pi/2$. Take the positive radius $\sqrt{\ell^2/2}$.
+\end{proof}
+
+\begin{proposition}[Square carousel center and regularity]
+\label{prop:square-carousel}
+\lean{UlamFloating.IsCarousel.square_fixed_center,UlamFloating.IsCarousel.isRegularPolygon_four}
+\leanok
+\uses{prop:square-motion,lem:square-metric}
+A four-vertex planar carousel with distinct vertices consists of regular
+squares with one fixed center and squared circumradius $\ell^2/2$.
+\end{proposition}
+\begin{proof}
+\leanok
+The fixed vertex average is the center. Apply the radius and complete
+distance formulas at each time.
+\end{proof}
+
+\begin{proposition}[Square reduction]
+\label{prop:square}
+\lean{UlamFloating.square_reduction}
+\leanok
+\uses{prop:kinematic-extraction,lem:boundary-embedding,prop:square-carousel}
+Every extracted quadrilateral is a square with a fixed center $c$, and
+$\norm{p_i(t)-c}^2=\ell^2/2$.
+\end{proposition}
+\begin{proof}
+\leanok
+The boundary assumptions give carousel laws and distinct samples.
+Apply the square-carousel theorem, including its regular-polygon conclusion.
+Neither cyclic polygon convexity nor a lamina-centroid identification is needed.
+\end{proof}
+
+\begin{lemma}[Assembly for one quarter: conditional]
+\label{lem:quarter-assembly}
+\lean{UlamFloating.quarter_rigidity_of_square_reduction}
+\leanok
+\uses{prop:disk,def:perimetral}
+The square-reduction statement implies $\mathcal R(1/4)$.
+The square-reduction statement is an explicit premise of this assembly lemma.
+\end{lemma}
+\begin{proof}
+\leanok
+The squared radius is $\ell^2/2>0$. Use sample zero and the disk bridge.
+\end{proof}
+
+\begin{theorem}[Geometric rigidity at density $1/4$]
+\label{thm:quarter}
+\lean{UlamFloating.quarter_rigidity}
+\leanok
+\uses{prop:square,lem:quarter-assembly}
+$\mathcal R(1/4)$ holds.
+\end{theorem}
+\begin{proof}
+\leanok
+Apply the final assembly to the proved square reduction. Sample zero is
+the entire boundary, whose squared distance from the fixed center is
+$\ell^2/2>0$. The disk bridge identifies the whole body.
+\end{proof}
+
+\begin{proposition}[A nondisk would give a nonconstant geometric pentagon solution]
+\label{prop:pentagon-counterexample}
+\lean{UlamFloating.IsUnitSpeedBoundary.nonconstant_pentagon_solution_of_not_isDisk,UlamFloating.IsUnitSpeedBoundary.nonconstant_pentagon_solution_with_lift_of_not_isDisk}
+\leanok
+\uses{prop:constant-fifth-rigidity,thm:geometric-pentagon-ode,prop:pentagon-period,prop:chord-one-turn,prop:cyclic-angle-sum,prop:chord-angle-range}
+If a constant one-fifth chord body is not a disk, its boundary admits a
+reconstructing chord lift with a nonconstant $C^1$, $P$-periodic sampled
+curve $X$. The coordinates lie in $(0,\pi)$, sum to $3\pi$, satisfy
+$X_{i+1}(t)=X_i(t+P/5)$, and solve $X'=(2/\ell)F(X)$.
+Every positive period $T$ of $X$, including a period smaller than $P$,
+satisfies
+\[
+ T\geq\frac{\ell\pi}{2\sqrt3}.
+\]
+\end{proposition}
+\begin{proof}
+\leanok
+Choose the positive one-turn lift. Its sampled curve cannot be constant,
+since the constant-case theorem would make the body a disk. Apply the
+geometric equation and the analytic period bound to this same curve.
+The original boundary reconstruction is retained in the formal conclusion.
+The stronger version also retains the $C^1$ lift, its positive derivative,
+and its exact one-turn translation identity.
+\end{proof}
+
+\begin{definition}[The additive subgroup of periods]
+\label{def:period-subgroup}
+\lean{UlamFloating.periodSubgroup}
+\leanok
+For a function $f:G\to Y$ on any additive group, its period subgroup is
+$\{T\in G: f(t+T)=f(t)\text{ for every }t\}$.
+The target type $Y$ is arbitrary. Zero and negative periods are included.
+\end{definition}
+
+\begin{proposition}[A period gap gives a least positive period]
+\label{prop:least-period-gap}
+\lean{UlamFloating.exists_least_positive_period_of_lower_bound}
+\leanok
+\uses{def:period-subgroup}
+In a linearly ordered Archimedean additive commutative group, suppose $f$
+has a positive period and every positive period is at least $\varepsilon>0$.
+Then $f$ has a least positive period $T$.
+Continuity and a differential equation are not assumptions of this result.
+\end{proposition}
+\begin{proof}
+\leanok
+The period subgroup is nontrivial and disjoint from $(0,\varepsilon)$.
+Apply mathlib's least-positive-element theorem for ordered Archimedean
+subgroups.
+\end{proof}
+
+\begin{lemma}[Classification of all periods]
+\label{lem:period-classification}
+\lean{UlamFloating.mem_periodSubgroup,UlamFloating.periodSubgroup_eq_zmultiples_of_isLeast,UlamFloating.periodic_iff_zsmul_of_isLeast,UlamFloating.periodic_pos_iff_nat_mul_of_isLeast}
+\leanok
+\uses{def:period-subgroup,prop:least-period-gap}
+Membership in the period subgroup is ordinary periodicity. If $T$ is
+the least positive period, the subgroup is exactly $\mathbb ZT$.
+For a real-valued time domain, a positive number $P$ is a period precisely
+when $P=mT$ for a positive natural number $m$.
+\end{lemma}
+\begin{proof}
+\leanok
+A least positive element generates an Archimedean ordered subgroup.
+Use the integer-multiple description of that generated subgroup.
+Since $P,T>0$, the integer multiplying $T$ is positive and hence is a
+positive natural number.
+\end{proof}
+
+\begin{lemma}[Cyclic shifts exclude divisible multiplicities]
+\label{lem:cyclic-period-divisibility}
+\lean{UlamFloating.eq_initial_of_finRotate_invariant,UlamFloating.constant_of_periodic_cyclic_shift,UlamFloating.cycle_length_not_dvd_period_multiple}
+\leanok
+\uses{lem:finite-cycle}
+A function on a nonempty finite cycle invariant under one-step rotation
+is constant. Consequently, if a coordinate motion $X:\mathbb R\to\mathbb R^N$
+has fixed coordinate sum and satisfies
+$X_{i+1}(t)=X_i(t+P/N)$, then $P/N$ being a period forces $X$ to be constant.
+For nonconstant $X$, if $T$ is a period and $P=mT$ with $m\in\mathbb N$,
+then $N$ does not divide $m$. No continuity or ODE is required here.
+\end{lemma}
+\begin{proof}
+\leanok
+Induct along the finite cycle to show all coordinates agree. The fixed
+sum determines their common value. If $m=Nq$, then $P/N=qT$ is a period;
+the preceding constancy conclusion contradicts nonconstancy.
+\end{proof}
+
+\begin{proposition}[Least periods of general cyclic coordinate motions]
+\label{prop:least-cyclic-period}
+\lean{UlamFloating.exists_least_period_cyclic_motion}
+\leanok
+\uses{prop:least-period-gap,lem:period-classification,lem:cyclic-period-divisibility}
+For a nonconstant fixed-sum cyclic motion with positive traversal period
+$P$ and positive lower bound $\varepsilon$ on periods, there are a least
+positive period $T\geq\varepsilon$ and a positive integer $m$ with
+$P=mT$ and $N\nmid m$.
+\end{proposition}
+\begin{proof}
+\leanok
+Choose the least positive period from the period gap. Classify the
+traversal period as a positive multiple and apply the cyclic divisibility
+obstruction. Apply the original lower bound to the least period itself.
+\end{proof}
+
+\begin{lemma}[Translation increments of a primitive with periodic derivative]
+\label{lem:periodic-primitive-increment}
+\lean{UlamFloating.sub_eq_of_periodic_deriv,UlamFloating.add_nat_mul_of_add_const}
+\leanok
+Let $f:\mathbb R\to E$ be differentiable, where $E$ is any real normed
+space. If $f'$ is $T$-periodic, then $f(t+T)-f(t)$ is independent of $t$.
+More generally, any identity $f(t+T)=f(t)+v$ implies
+$f(t+nT)=f(t)+nv$ for every natural number $n$.
+\end{lemma}
+\begin{proof}
+\leanok
+The derivative of $f(t+T)-f(t)$ vanishes, so the difference is constant
+by the mean value theorem. Iterate a fixed increment by induction.
+\end{proof}
+
+\begin{lemma}[Dividing a known total increment]
+\label{lem:periodic-primitive-multiplicity}
+\lean{UlamFloating.sub_eq_inv_smul_of_periodic_deriv,UlamFloating.sub_eq_div_of_periodic_deriv}
+\leanok
+\uses{lem:periodic-primitive-increment}
+If $f'$ is $T$-periodic, $m>0$ is an integer, and $f(mT)-f(0)=A$,
+then $f(t+T)-f(t)=m^{-1}A$ for every $t$. The result holds in any
+real normed space; the scalar specialization gives $A/m$.
+\end{lemma}
+\begin{proof}
+\leanok
+The preceding lemma gives $f(mT)-f(0)=m(f(T)-f(0))$.
+Multiply by $m^{-1}$ and use the independence of the initial time.
+\end{proof}
+
+\begin{lemma}[Geometric angular velocity from pentagon shape]
+\label{lem:pentagon-angular-speed}
+\lean{UlamFloating.IsUnitSpeedBoundary.fifth_chord_angle_speed}
+\leanok
+\uses{prop:boundary-tangent-angles,lem:five-angle-relations}
+For the positive $C^1$ one-turn chord lift of a constant one-fifth chord
+boundary, with sampled angle curve $X$, one has
+\[
+ \theta'(t)=-\frac{2}{\ell}\sin(X_1(t)+X_3(t)).
+\]
+Indices here are zero based, as in the formal definition.
+\end{lemma}
+\begin{proof}
+\leanok
+Apply the five tangent-angle identity and the geometric sine speed law.
+Identify its two translated angle expressions with sampled coordinates.
+\end{proof}
+
+\begin{proposition}[Exact chord turning over a shape period]
+\label{prop:pentagon-shape-turning}
+\lean{UlamFloating.IsUnitSpeedBoundary.periodic_chord_angle_deriv_of_fifth_shape_period,UlamFloating.IsUnitSpeedBoundary.chord_angle_advance_of_fifth_shape_period}
+\leanok
+\uses{lem:pentagon-angular-speed,lem:periodic-primitive-multiplicity}
+Every period $T$ of the actual sampled shape $X$ is a period of
+$\theta'$. If $P=mT$ for a positive integer $m$, then
+\[
+ \theta(t+T)-\theta(t)=\frac{2\pi}{m}\qquad\text{for every }t.
+\]
+The lift is the original geometric chord lift, with its proved one-turn
+identity over the boundary traversal.
+\end{proposition}
+\begin{proof}
+\leanok
+Periodicity of $X$ makes the angular-speed formula periodic. Apply the
+primitive increment theorem with total increment $2\pi$ over $P=mT$.
+\end{proof}
+
+\begin{lemma}[Area-preserving maps and polygon moments]
+\label{lem:polygon-map-moments}
+\lean{UlamFloating.areaForm_rotation,UlamFloating.polygonSignedArea_map,UlamFloating.polygonFirstMoment_map,UlamFloating.polygonCentroid_map}
+\uses{def:moments}
+Rotations preserve the oriented area form in any Euclidean plane.
+For any planar linear map $L$ preserving that form and any finite
+successor permutation, signed polygon area is unchanged, while signed
+first moment and signed centroid are carried to their images under $L$.
+The centroid identity also holds for the totalized zero-area definition.
+\end{lemma}
+\begin{proof}
+Expand the rotation into cosine and sine components and apply
+$\cos^2 a+\sin^2 a=1$. For a general area-preserving map, apply its
+linearity to the finite sums defining moments and centroid.
+\end{proof}
+
+\begin{lemma}[Recovering vertices from cyclic edge vectors]
+\label{lem:cyclic-edge-reconstruction}
+\lean{UlamFloating.eq_add_of_cyclic_edges_eq}
+\uses{lem:cyclic-period-divisibility}
+For two polygons $p,q$ on the same nonempty finite cycle with values
+in any additive commutative group, equality of all directed edge vectors
+implies $q_i=p_i+(q_0-p_0)$ for every index $i$.
+\end{lemma}
+\begin{proof}
+The difference $q_i-p_i$ is unchanged by the cyclic successor.
+Finite induction makes it equal to its value at index zero.
+\end{proof}
+
+\begin{proposition}[Recovering centered polygons from transformed edges]
+\label{prop:centered-edge-reconstruction}
+\lean{UlamFloating.sub_centroid_eq_of_edges_eq_map}
+\uses{lem:polygon-map-moments,lem:cyclic-edge-reconstruction,prop:moment-translation}
+Suppose $p$ has nonzero signed area, $L$ preserves the oriented area
+form, and every directed edge of $q$ is the image under $L$ of the
+corresponding edge of $p$. Writing $C$ for signed centroid, one has
+\[
+ q_i-C(q)=L(p_i-C(p)).
+\]
+Convexity and regularity are not required.
+\end{proposition}
+\begin{proof}
+Edge reconstruction gives $q_i=L(p_i)+b$ for one translation $b$.
+The centroid transformation identities give $C(q)=L(C(p))+b$.
+Subtract to eliminate the translation.
+\end{proof}
+
+\begin{proposition}[Rotated carousel edges fix a common rotation center]
+\label{prop:carousel-rotated-edges}
+\lean{UlamFloating.IsCarousel.sub_centroid_eq_of_rotated_edges}
+\uses{prop:centered-edge-reconstruction,prop:invariants}
+If two configurations of a nonzero-area carousel have edge vectors
+related by the rotation $R_a$, their vertices are related by the same
+rotation about the conserved signed centroid $c$:
+$p_i(s)-c=R_a(p_i(t)-c)$.
+\end{proposition}
+\begin{proof}
+Apply centered edge reconstruction to the rotation, then use conservation
+of the signed centroid to identify both centers with the centroid at time zero.
+\end{proof}
+
+\begin{proposition}[A chord-angle increment rotates the original boundary]
+\label{prop:chord-boundary-rotation}
+\lean{UlamFloating.rotation_of_angle_increment,UlamFloating.IsUnitSpeedBoundary.rotation_about_centroid_of_chord_angle_increment}
+\uses{prop:carousel-rotated-edges,prop:extraction,prop:polygon-area-nonzero}
+For any constant rational chord increment $P/n$ with $n\geq3$,
+suppose the original chord lift satisfies $\theta(t+T)=\theta(t)+a$.
+Then, with $c$ the signed centroid of the sampled polygon at time zero,
+\[
+ \gamma(t+T)-c=R_a(\gamma(t)-c)\qquad\text{for every }t.
+\]
+The rotation center is derived from the geometric boundary data.
+The underlying vector-rotation identity needs no differentiability.
+\end{proposition}
+\begin{proof}
+Composition of rotations turns the angle increment into rotation of
+every directed chord. Apply this at all sampled vertices and use the
+carousel result. Strict convexity supplies nonzero signed area. Sample
+zero is the original boundary point at each time.
+\end{proof}
+
+\begin{proposition}[Least shape period of a hypothetical pentagon counterexample]
+\label{prop:least-pentagon-period}
+\lean{UlamFloating.IsUnitSpeedBoundary.least_pentagon_period_of_not_isDisk}
+\leanok
+\uses{prop:pentagon-counterexample,prop:least-cyclic-period,prop:pentagon-shape-turning,prop:chord-boundary-rotation}
+A nondisk with the constant one-fifth chord property would give the
+nonconstant geometric angle solution described above, with least positive
+period $T$ and positive integer $m$ satisfying
+\[
+ P=mT,\qquad \gcd(m,5)=1,\qquad
+ T\geq\frac{\ell\pi}{2\sqrt3}.
+\]
+The conclusion retains the chord reconstruction, convex angle ranges,
+fixed sum, cyclic time shift, and actual differential equation.
+It also gives $\theta(t+T)-\theta(t)=2\pi/m$ for every $t$.
+For a single fixed center $c$, the original boundary satisfies
+$\gamma(t+T)-c=R_{2\pi/m}(\gamma(t)-c)$ for every $t$.
+\end{proposition}
+\begin{proof}
+\leanok
+Apply the general least-period theorem to the extracted geometric motion.
+Its analytic period bound is strictly positive because $\ell>0$.
+The cyclic divisibility obstruction gives $5\nmid m$; primality of five
+makes this equivalent to coprimality.
+The strengthened extraction retains the lift data needed to apply the
+exact shape-period turning theorem to the same angle and period.
+The general chord-to-boundary rotation theorem identifies a fixed center
+for the same time shift, with no assumption of regular sampled polygons.
+\end{proof}
+
+\begin{proposition}[Pentagon obstruction: unresolved input]
+\label{prop:pentagon}
+\lean{UlamFloating.pentagonObstructionStatement}
+\notready
+\uses{prop:extraction,prop:invariants,prop:least-pentagon-period,prop:constant-fifth-rigidity}
+A strictly convex, once-traversed unit-speed boundary with constant chords
+at increment $P/5$ must have regular sampled pentagons.
+\end{proposition}
+The constant geometric angle branch is proved, including the full regular
+pentagon distance table. Excluding nonconstant geometric motions remains
+unresolved in this project. The least positive shape period and the relation
+$P=mT$ with $\gcd(m,5)=1$ are now proved, but these constraints do not
+exclude every positive multiplicity. Possible
+routes are a rigorous period obstruction for the pentagon flow or a direct
+inequality excluding nonconstant motions subject to the one-curve shift
+condition. Plots and approximate decimal periods are not proof inputs.
+An interval-based approach needs exact certificates and a proved enclosure
+theorem. Do not encode the desired obstruction as a geometric hypothesis.
+
+\begin{proposition}[Fixed circle for a regular-polygon carousel]
+\label{prop:regular-carousel}
+\lean{UlamFloating.IsCarousel.fixed_circle_of_regular}
+\leanok
+\uses{prop:cyclic-centroid,prop:invariants,def:polygon-geometry}
+A carousel whose polygons are regular and whose signed area is nonzero
+at time zero has a single fixed circumcenter and positive squared
+circumradius. Regularity is a hypothesis of this proposition.
+\end{proposition}
+\begin{proof}
+\leanok
+Area conservation keeps the signed area nonzero. The signed centroid is
+the circumcenter at each time, and its conservation fixes that center.
+The regular-polygon distance formula gives
+$\ell^2=2r^2(1-\cos(2\pi/n))$ at every time. The coefficient is nonzero
+because $\ell>0$, so the squared circumradius is also fixed.
+\end{proof}
+
+\begin{lemma}[Disk rigidity from regular rational samples]
+\label{lem:regular-samples-disk}
+\lean{UlamFloating.IsUnitSpeedBoundary.isDisk_of_regular_samples}
+\leanok
+\uses{prop:regular-carousel,prop:extraction,prop:polygon-area-nonzero,prop:disk}
+For $n\geq3$, a constant-chord boundary with increment $P/n$ is a disk
+if every sampled polygon is regular.
+\end{lemma}
+\begin{proof}
+\leanok
+Extract the carousel. Cyclic strict convexity supplies nonzero signed
+area. The fixed-circle theorem applies, and sample zero traces the whole
+boundary. Reconstruct the body from its spherical frontier.
+\end{proof}
+
+\begin{lemma}[One-fifth assembly with explicit obstruction premise]
+\label{lem:fifth-assembly}
+\lean{UlamFloating.fifth_rigidity_of_pentagon_obstruction}
+\leanok
+\uses{lem:regular-samples-disk,prop:pentagon}
+The pentagon obstruction implies $\mathcal R(1/5)$.
+\end{lemma}
+\begin{proof}
+\leanok
+Apply the obstruction to the boundary data in $\mathcal P_{1/5}(K)$,
+then use rigidity from regular rational samples with $n=5$.
+The obstruction remains an explicit premise of this checked implication.
+\end{proof}
+
+\begin{theorem}[Density $1/5$: target, not yet proved]
+\label{thm:fifth}
+\lean{UlamFloating.fifthRigidityStatement}
+\notready
+\uses{prop:pentagon,lem:fifth-assembly}
+$\mathcal R(1/5)$ holds.
+\end{theorem}
+The assembly after the obstruction is proved: conservation of the algebraic
+centroid fixes the circumcenter, and equal edge lengths fix the radius.
+No polygon-to-lamina centroid theorem is needed for this route.
+The obstruction remains unproved and is not an axiom in the Lean library.
+
+\section{Physical formulation and source audit}
+
+\begin{definition}[Physical equilibrium and perimetral fraction]
+\label{def:physical}
+\lean{UlamFloating.waterlineCap,UlamFloating.IsEquilibriumCut,UlamFloating.FloatsWithPerimetralDensity}
+\leanok
+\uses{def:boundary,def:moments}
+An equilibrium cut has unit normal $u$, offset $a$, cap area equal to
+$\rho$ times body area, and cap-to-body centroid displacement parallel to $u$.
+Floating at perimetral density $\sigma$ requires $0<\sigma<1$, boundary
+data $(P,\gamma)$, and one $\rho\in(0,1)$ such that every pair
+$\gamma(t),\gamma(t+\sigma P)$ lies on an equilibrium cut and every
+oriented unit normal occurs. This definition does not assume constant
+chord lengths, regular sampled polygons, or rigidity.
+\end{definition}
+
+\begin{proposition}[Hydrostatic reduction: statement formalized]
+\label{prop:physical}
+\lean{UlamFloating.hydrostaticReductionStatement}
+\uses{def:physical,def:perimetral}
+An intrinsic equilibrium condition in every orientation, with perimetral
+density $\sigma$, implies $\mathcal P_\sigma(K)$.
+\end{proposition}
+The formal interface uses unit normals $u$, offsets $a$, and caps
+$K\cap\{x:\ip ux\leq a\}$. Fix one submerged area fraction
+$\rho\in(0,1)$ for all orientations. Equilibrium requires the cap centroid
+minus the body centroid to be parallel to $u$. The waterline endpoints
+must divide the boundary at increment $\sigma P$. Prove integrability,
+positive cap area, unique offsets, endpoint regularity, and the necessary
+cap-integral differentiation. A converse is a separate future theorem.
+The physical rigidity statements also require the intrinsic boundary bridge.
+
+\begin{lemma}[Physical assembly: conditional]
+\label{lem:physical-assembly}
+\lean{UlamFloating.physical_rigidity_of_geometric}
+\leanok
+\uses{def:physical,def:perimetral}
+The hydrostatic reduction and the three geometric rigidity statements
+together imply physical rigidity at the three densities. All four
+statements are explicit premises of this assembly lemma.
+\end{lemma}
+\begin{proof}
+\leanok
+Apply hydrostatic reduction and split into the three values of $\sigma$.
+\end{proof}
+
+\begin{theorem}[Physical rigidity at the three densities: target]
+\label{thm:physical-rigidity}
+\lean{UlamFloating.physicalRigidityStatement}
+\uses{prop:physical,thm:third,thm:quarter,thm:fifth,lem:physical-assembly}
+If $\sigma\in\{1/3,1/4,1/5\}$ and a body floats at perimetral density
+$\sigma$ in the preceding formal sense, then it is a closed disk of
+positive radius. The boundary-data formulation is explicit; applying this
+to a merely regular input boundary also requires arc-length normalization.
+\end{theorem}
+
+\paragraph{Source audit.}
+Bracho--Montejano--Oliveros, \emph{Carousels, Zindler curves and the floating
+body problem} (2004), Theorem 5, treats $1/3$ and $1/4$. Section 6 asserts
+the pentagon period obstruction and refers elsewhere for details.
+\href{https://www.matem.unam.mx/~luis/pdfs/volantin1.pdf}{Author-hosted PDF}.
+
+Their \emph{A classification theorem for Zindler carrousels} (2001),
+Section 4, labels period monotonicity Conjecture 4.1 and discusses computer
+evidence. Its displayed inequality conflicts with the following numerical
+discussion. Theorem 3.5 also excludes two exceptional cases by figures.
+These steps need rigorous replacements or a verified later source; this
+audit does not establish that no rigorous proof exists elsewhere.
+\href{https://www.matem.unam.mx/~luis/pdfs/volantin2.pdf}{Author-hosted PDF}.
+
+The 2026 sixth-density paper mentions numerical evidence in the earlier
+fifth-density work, while the eighth-density paper summarizes the low
+denominators as proved. Its own eighth-density theorem assumes central
+symmetry, which is absent from our three targets.
+\href{https://arxiv.org/abs/2604.10330}{Sixth-density paper};
+\href{https://arxiv.org/abs/2607.08338}{Eighth-density paper}.
+
+\paragraph{Implementation order.}
+The triangle and square reductions and geometric rigidity at $1/3$ and $1/4$
+are proved, as is the full convex carousel extraction theorem.
+The analytic period bound, unit-speed metric length, and arc-length
+normalization of regular boundary data are also proved.
+The five-angle equation has an exact period lower bound from finite-cycle
+energy, with positive time scaling explicit. Global chord-angle coordinates,
+one-turn winding, periodic convex cyclic angle coordinates, and their
+geometric five-angle differential equation are proved. The constant angle
+branch gives both a disk and regular sampled pentagons. A nondisk would
+therefore yield a nonconstant geometric solution, with the proved lower
+bound on every positive shape period. The least positive shape period $T$
+now exists, and $P=mT$ for a positive integer $m$ coprime to five.
+A stronger geometric or period obstruction is still required to exclude
+all such nonconstant motions; the present lower bound is insufficient.
+Prove geometric centroid identification separately.
+The final one-fifth assembly is proved conditional on the pentagon obstruction,
+using signed moments to identify the circumcenter directly.
+Audit and replace the pentagon input
+before certifying $1/5$. Develop hydrostatics and intrinsic regularity as
+separate modules. General $q/n$ sampling needs additional coprimality and
+winding proofs. Keep metric lemmas polymorphic, local laws in real inner
+product spaces, and finite-sum arguments independent of the denominator.
+Normalize side length only through an explicit scaling equivalence if needed.
