@@ -56,10 +56,12 @@ def main() -> None:
             specifications.update(specs)
         elif kind != "definition":
             proofs.update(linked)
-    print(run("lake", "build"), end="")
+    print("Building the Lean library...", flush=True)
+    print(run("lake", "build"), end="", flush=True)
     # Keep the temporary Lean file in the project so Lake resolves its imports.
     with tempfile.TemporaryDirectory(prefix="blueprint-audit-", dir=ROOT / ".lake") as tmp:
         audit = Path(tmp) / "Audit.lean"
+        root_names = ", ".join(f"`{name}" for name in names)
         proof_names = ", ".join(f"`{name}" for name in sorted(proofs))
         kind_check = (
             "\nopen Lean Elab Command in\nrun_cmd do\n"
@@ -74,23 +76,39 @@ def main() -> None:
         target_checks = "\n".join(
             f"example : UlamFloating.PerimetralRigidity ((1 : ℝ) / {denominator}) := {name}"
             for name, denominator in targets.items() if name in proofs)
-        audit.write_text("import UlamFloating\n" + "\n".join(
-            f"#check {name}\n#print axioms {name}" for name in names) + "\n",
-            encoding="utf-8")
+        # Use Lean's own axiom collector with one shared visited set. Checking
+        # the union of all roots' dependencies against an allowlist is equivalent
+        # to checking each root separately, without repeatedly walking mathlib.
+        axiom_check = (
+            "\nopen Lean Elab Command in\nrun_cmd do\n"
+            "  let env ← getEnv\n"
+            f"  let roots : List Name := [{root_names}]\n"
+            "  for name in roots do\n"
+            "    unless (env.checked.get.find? name).isSome do\n"
+            '      throwError "Missing checked declaration: {name}"\n'
+            "  let (_, state) := ((roots.forM Lean.CollectAxioms.collect).run env).run {}\n"
+            "  for axiomName in state.axioms do\n"
+            "    unless ([``propext, ``Classical.choice, ``Quot.sound] : List Name).contains axiomName do\n"
+            '      throwError "Disallowed axiom dependency: {axiomName}"\n'
+            '    logInfo m!"ULAM_AUDIT_AXIOM {axiomName}"\n'
+            '  logInfo m!"ULAM_AUDIT_ROOTS {roots.length}"\n')
+        audit.write_text("import UlamFloating\nimport Lean.Util.CollectAxioms\n",
+                         encoding="utf-8")
         with audit.open("a", encoding="utf-8") as handle:
-            handle.write(spec_checks + "\n" + target_checks + "\n" + kind_check)
+            handle.write(spec_checks + "\n" + target_checks + "\n" + kind_check + axiom_check)
+        print(f"Auditing {len(names)} declarations with Lean's shared dependency traversal...",
+              flush=True)
         output = run("lake", "env", "lean", str(audit))
     if "sorryAx" in output:
         raise SystemExit("A linked declaration depends on sorryAx")
     allowed = {"propext", "Classical.choice", "Quot.sound"}
-    reported = re.findall(r"depends on axioms:\s*\[([^\]]*)\]", output)
-    for group in reported:
-        unexpected = {a.strip() for a in group.split(",") if a.strip()} - allowed
-        if unexpected:
-            raise SystemExit(f"Nonstandard axioms: {sorted(unexpected)}")
-    reports = len(reported) + len(re.findall(r"does not depend on any axioms", output))
-    if reports != len(names):
-        raise SystemExit(f"Expected {len(names)} axiom reports, received {reports}")
+    reported = set(re.findall(r"^ULAM_AUDIT_AXIOM (\S+)$", output, re.MULTILINE))
+    unexpected = reported - allowed
+    if unexpected:
+        raise SystemExit(f"Nonstandard axioms: {sorted(unexpected)}")
+    reports = re.findall(r"^ULAM_AUDIT_ROOTS (\d+)$", output, re.MULTILINE)
+    if reports != [str(len(names))]:
+        raise SystemExit(f"Expected an audit of {len(names)} roots, received {reports}")
     print(f"Validated {len(labels)} blueprint nodes and {len(names)} Lean links; "
           "no admitted proofs or nonstandard axioms in their dependencies.")
     print(f"Distinguished {len(proofs)} proved lemmas from "

@@ -18,6 +18,8 @@ jobs:
           python-version: '3.12'
       - name: Check declarations and axiom dependencies
         run: python scripts/check_blueprint.py
+      - name: Test audit rejection cases
+        run: python scripts/test_blueprint_audit.py
       - name: Install blueprint tools
         run: |
           sudo apt-get update

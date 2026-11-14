@@ -138,12 +138,11 @@ and the hydrostatic reduction remain unproved. The design aims for mathlib reuse
 undergone upstream review.
 
 Verification: `lake build` passes. The current blueprint has 131 nodes and
-270 Lean links: 239 compiled lemmas, 5 statement-only propositions, and 26 other
-definitions or structures. The last completed declaration audit covered 230
-proved lemmas, with no admitted proofs or nonstandard axioms in their dependencies.
-The nine newest polygon-motion and boundary-rotation lemmas compile; their full
-dependency re-audit is pending. Their new blueprint nodes are not yet marked
-`\leanok`. The CI workflow runs the full current audit on every push.
+270 Lean links: 239 proved lemmas, 5 statement-only propositions, and 26 other
+definitions or structures. The full declaration audit passes, including the
+polygon-motion and boundary-rotation lemmas, with no admitted proofs or
+nonstandard axioms in their dependencies. The CI workflow runs the full
+current audit on every push.
 The audit rejects a proposition specification marked as proved and checks that
 proof links really name Lean theorems.
 The lemma count includes seven explicitly conditional assembly results.
@@ -171,9 +170,13 @@ lake exe cache get Mathlib.Analysis.InnerProductSpace.Calculus Mathlib.Analysis.
 ```
 
 The validation script checks dependency labels and Lean declaration links,
-builds the library, and asks Lean to report the axioms of linked declarations.
+builds the library, and uses Lean's own axiom collector to traverse the union
+of all linked declarations' dependencies with a shared visited set.
 It rejects dependencies on `sorryAx` or any axiom beyond Lean's standard
 `propext`, `Classical.choice`, and `Quot.sound`.
+Run `python scripts/test_blueprint_audit.py` after building to check that the
+audit accepts valid proofs and rejects transitive custom axioms, admitted
+proofs, missing declarations, and specifications incorrectly presented as proofs.
 
 ## Blueprint
 

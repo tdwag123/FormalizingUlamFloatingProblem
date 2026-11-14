@@ -2005,6 +2005,7 @@ primitive increment theorem with total increment $2\pi$ over $P=mT$.
 \begin{lemma}[Area-preserving maps and polygon moments]
 \label{lem:polygon-map-moments}
 \lean{UlamFloating.areaForm_rotation,UlamFloating.polygonSignedArea_map,UlamFloating.polygonFirstMoment_map,UlamFloating.polygonCentroid_map}
+\leanok
 \uses{def:moments}
 Rotations preserve the oriented area form in any Euclidean plane.
 For any planar linear map $L$ preserving that form and any finite
@@ -2013,6 +2014,7 @@ first moment and signed centroid are carried to their images under $L$.
 The centroid identity also holds for the totalized zero-area definition.
 \end{lemma}
 \begin{proof}
+\leanok
 Expand the rotation into cosine and sine components and apply
 $\cos^2 a+\sin^2 a=1$. For a general area-preserving map, apply its
 linearity to the finite sums defining moments and centroid.
@@ -2021,12 +2023,14 @@ linearity to the finite sums defining moments and centroid.
 \begin{lemma}[Recovering vertices from cyclic edge vectors]
 \label{lem:cyclic-edge-reconstruction}
 \lean{UlamFloating.eq_add_of_cyclic_edges_eq}
+\leanok
 \uses{lem:cyclic-period-divisibility}
 For two polygons $p,q$ on the same nonempty finite cycle with values
 in any additive commutative group, equality of all directed edge vectors
 implies $q_i=p_i+(q_0-p_0)$ for every index $i$.
 \end{lemma}
 \begin{proof}
+\leanok
 The difference $q_i-p_i$ is unchanged by the cyclic successor.
 Finite induction makes it equal to its value at index zero.
 \end{proof}
@@ -2034,6 +2038,7 @@ Finite induction makes it equal to its value at index zero.
 \begin{proposition}[Recovering centered polygons from transformed edges]
 \label{prop:centered-edge-reconstruction}
 \lean{UlamFloating.sub_centroid_eq_of_edges_eq_map}
+\leanok
 \uses{lem:polygon-map-moments,lem:cyclic-edge-reconstruction,prop:moment-translation}
 Suppose $p$ has nonzero signed area, $L$ preserves the oriented area
 form, and every directed edge of $q$ is the image under $L$ of the
@@ -2044,6 +2049,7 @@ corresponding edge of $p$. Writing $C$ for signed centroid, one has
 Convexity and regularity are not required.
 \end{proposition}
 \begin{proof}
+\leanok
 Edge reconstruction gives $q_i=L(p_i)+b$ for one translation $b$.
 The centroid transformation identities give $C(q)=L(C(p))+b$.
 Subtract to eliminate the translation.
@@ -2052,6 +2058,7 @@ Subtract to eliminate the translation.
 \begin{proposition}[Rotated carousel edges fix a common rotation center]
 \label{prop:carousel-rotated-edges}
 \lean{UlamFloating.IsCarousel.sub_centroid_eq_of_rotated_edges}
+\leanok
 \uses{prop:centered-edge-reconstruction,prop:invariants}
 If two configurations of a nonzero-area carousel have edge vectors
 related by the rotation $R_a$, their vertices are related by the same
@@ -2059,6 +2066,7 @@ rotation about the conserved signed centroid $c$:
 $p_i(s)-c=R_a(p_i(t)-c)$.
 \end{proposition}
 \begin{proof}
+\leanok
 Apply centered edge reconstruction to the rotation, then use conservation
 of the signed centroid to identify both centers with the centroid at time zero.
 \end{proof}
@@ -2066,6 +2074,7 @@ of the signed centroid to identify both centers with the centroid at time zero.
 \begin{proposition}[A chord-angle increment rotates the original boundary]
 \label{prop:chord-boundary-rotation}
 \lean{UlamFloating.rotation_of_angle_increment,UlamFloating.IsUnitSpeedBoundary.rotation_about_centroid_of_chord_angle_increment}
+\leanok
 \uses{prop:carousel-rotated-edges,prop:extraction,prop:polygon-area-nonzero}
 For any constant rational chord increment $P/n$ with $n\geq3$,
 suppose the original chord lift satisfies $\theta(t+T)=\theta(t)+a$.
@@ -2077,6 +2086,7 @@ The rotation center is derived from the geometric boundary data.
 The underlying vector-rotation identity needs no differentiability.
 \end{proposition}
 \begin{proof}
+\leanok
 Composition of rotations turns the angle increment into rotation of
 every directed chord. Apply this at all sampled vertices and use the
 carousel result. Strict convexity supplies nonzero signed area. Sample
