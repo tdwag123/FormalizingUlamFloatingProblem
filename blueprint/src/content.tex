@@ -552,6 +552,63 @@ Combine kinematic extraction, strict convexity of the sampled polygon,
 and the finite cyclic time-shift identity.
 \end{proof}
 
+\begin{definition}[Zindler carousel and boundary realization]
+\label{def:zindler}
+\lean{UlamFloating.IsZindlerCarousel,UlamFloating.HasBoundaryZindlerCarousel}
+\leanok
+\uses{def:carousel,def:boundary}
+A Zindler carousel has $n\geq2$ chairs, each with a positive period,
+whose regular trajectories all have the same image. This general definition
+allows self-intersections and does not impose convexity or a prescribed phase.
+A boundary realization consists of unit-speed boundary data $(P,\gamma)$
+for $K$ whose samples $p_i(t)=\gamma(t+iP/n)$ form such a carousel.
+\end{definition}
+
+\begin{lemma}[Samples have the same closed trajectory]
+\label{lem:zindler-samples}
+\lean{UlamFloating.range_boundarySamples,UlamFloating.periodic_boundarySamples}
+\leanok
+\uses{def:sampling}
+Every sample has the same range as the original curve, and every period
+of that curve is a period of each sample. These facts hold for arbitrary targets.
+\end{lemma}
+\begin{proof}
+\leanok
+Translation of the real parameter is surjective and commutes with a period shift.
+\end{proof}
+
+\begin{proposition}[Construction of an inscribed Zindler carousel]
+\label{prop:zindler-construction}
+\lean{UlamFloating.IsUnitSpeedBoundary.boundarySamples_isZindlerCarousel,UlamFloating.IsUnitSpeedBoundary.zindler_construction}
+\leanok
+\uses{def:zindler,lem:zindler-samples,prop:extraction}
+Positive constant chords of increment $P/n$ construct a Zindler carousel
+on the specified boundary for $n\geq2$. For $n\geq3$, each configuration
+is a strictly convex polygon, each chair traces the entire frontier of $K$,
+and $p_{i+1}(t)=p_i(t+P/n)$, including the closing edge.
+\end{proposition}
+\begin{proof}
+\leanok
+Combine carousel extraction with the range and period identities.
+\end{proof}
+
+\begin{proposition}[Geometric Zindler equivalence]
+\label{prop:zindler-geometric}
+\lean{UlamFloating.hasConstantChord_of_boundarySamples_edge,UlamFloating.IsUnitSpeedBoundary.isZindlerCarousel_iff,UlamFloating.hasBoundaryZindlerCarousel_iff}
+\leanok
+\uses{prop:zindler-construction,def:perimetral}
+On a specified unit-speed strictly convex boundary, the samples form a
+Zindler carousel of side length $\ell$ if and only if $\ell>0$ and
+$\norm{\gamma(t+P/n)-\gamma(t)}=\ell$ for every $t$.
+Consequently, existence of a boundary Zindler realization is equivalent
+to $\mathcal P_{1/n}(K)$ for every $n\geq2$.
+\end{proposition}
+\begin{proof}
+\leanok
+Recover the chord law from the edge with index zero and the cyclic time shift.
+In the other direction apply the construction, then quantify over boundary data.
+\end{proof}
+
 \begin{lemma}[Intrinsic second carousel law]
 \label{lem:second-carousel}
 \lean{UlamFloating.velocity_sub_eq_rotation,UlamFloating.abs_angular_speed_le,UlamFloating.IsCarousel.edge_rotation}
@@ -2232,6 +2289,63 @@ must divide the boundary at increment $\sigma P$. Prove integrability,
 positive cap area, unique offsets, endpoint regularity, and the necessary
 cap-integral differentiation. A converse is a separate future theorem.
 The physical rigidity statements also require the intrinsic boundary bridge.
+
+\begin{proposition}[Physical Zindler equivalence: statement formalized]
+\label{prop:zindler-physical}
+\lean{UlamFloating.zindlerEquivalenceStatement}
+\uses{def:physical,def:zindler,prop:zindler-geometric}
+For every $n\geq3$ and every specified unit-speed boundary $(P,\gamma)$
+of $K$, floating in equilibrium at perimetral density $1/n$ is equivalent
+to the existence of $\ell$ such that the samples $\gamma(t+iP/n)$ form
+a Zindler carousel of side length $\ell$.
+\end{proposition}
+This is an unproved physical equivalence, corresponding to Theorem 2 and
+Remark 3 of
+\href{https://arxiv.org/pdf/2604.10330}{Asipchuk--Kosmakov--Zatitskii}.
+It retains the chosen parametrization. Both the forward hydrostatic argument
+(including passage to that parametrization) and the converse remain obligations.
+The generic definition permits nonconvex carousels; the boundary hypotheses
+in this statement ensure the required convexity and simplicity.
+
+\begin{lemma}[Exact constant-chord form of the physical specification]
+\label{lem:zindler-specification}
+\lean{UlamFloating.zindlerEquivalenceStatement_iff}
+\leanok
+\uses{prop:zindler-physical,prop:zindler-geometric}
+The preceding specification is equivalent to the same universally quantified
+statement with right-hand side
+$\exists\ell>0,\ \forall t,\ \norm{\gamma(t+P/n)-\gamma(t)}=\ell$.
+This is an equivalence of propositions, not a proof of either physical statement.
+\end{lemma}
+\begin{proof}
+\leanok
+Apply the geometric equivalence under the existential length quantifier.
+\end{proof}
+
+\begin{theorem}[Physical third and quarter rigidity: separate target]
+\label{thm:physical-third-quarter}
+\lean{UlamFloating.physicalThirdQuarterRigidityStatement}
+\uses{def:physical,thm:third,thm:quarter,prop:physical}
+If $\sigma=1/3$ or $\sigma=1/4$ and $K$ floats at perimetral density
+$\sigma$, then $K$ is a disk. This target does not include the fifth-density case.
+\end{theorem}
+
+\begin{lemma}[Zindler and third-quarter physical assemblies: conditional]
+\label{lem:zindler-physical-assembly}
+\lean{UlamFloating.boundaryZindlerCarousel_of_hydrostatic_reduction,UlamFloating.physical_third_quarter_rigidity_of_hydrostatic_reduction,UlamFloating.physical_rigidity_of_zindler_equivalence,UlamFloating.physical_third_quarter_rigidity_of_zindler_equivalence}
+\leanok
+\uses{prop:zindler-geometric,prop:physical,prop:zindler-physical,thm:third,thm:quarter}
+The forward hydrostatic reduction implies existence of a boundary Zindler
+carousel and physical rigidity at $1/3$ and $1/4$. Alternatively the full
+Zindler equivalence transfers any geometric rigidity theorem at $1/n$,
+and in particular the proved third and quarter cases, to the physical formulation.
+Each assembly retains its unproved physical input as an explicit premise.
+\end{lemma}
+\begin{proof}
+\leanok
+Obtain the constant-chord property from the relevant physical premise and
+apply geometric rigidity. The fifth-density theorem is not used.
+\end{proof}
 
 \begin{lemma}[Physical assembly: conditional]
 \label{lem:physical-assembly}

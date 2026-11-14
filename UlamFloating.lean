@@ -23,3 +23,4 @@ import UlamFloating.BoundaryTangentAngles
 import UlamFloating.PentagonGeometry
 import UlamFloating.PentagonReduction
 import UlamFloating.PentagonPeriods
+import UlamFloating.FloatingEquivalence

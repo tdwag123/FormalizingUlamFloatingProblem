@@ -25,6 +25,22 @@ Hungarica 49(2), 9–23 (2004):
 The paper's physical-equilibrium reduction is separate from the geometric
 results currently proved here.
 
+The Zindler construction is explicit in [Zindler.lean](UlamFloating/Zindler.lean).
+`IsZindlerCarousel` describes a cyclic carousel whose regular closed trajectories
+all have the same image. For a specified boundary, `zindler_construction` proves
+that the samples `γ(t + i * P / n)` form an inscribed, strictly convex Zindler
+carousel, with the cyclic time-shift identity. The geometric carousel and
+constant-chord formulations are proved equivalent (also for two chairs).
+
+[FloatingEquivalence.lean](UlamFloating/FloatingEquivalence.lean) states the full
+physical equivalence on a specified boundary, following Theorem 2 and Remark 3
+of [Asipchuk–Kosmakov–Zatitskii](https://arxiv.org/pdf/2604.10330).
+`zindlerEquivalenceStatement` is an **unproved proposition specification**.
+`physicalThirdQuarterRigidityStatement` separately records the physical 1/3 and
+1/4 target. Checked conditional assembly theorems show that the forward
+hydrostatic reduction, or the full Zindler equivalence, would complete those
+two cases without any assumption about 1/5.
+
 ## Library
 
 | Module | Scope |
@@ -45,6 +61,8 @@ results currently proved here.
 | `UlamFloating.BoundaryTangents` | Strict supporting functionals, consistent tangent orientation, and distinct directed tangents |
 | `UlamFloating.BoundaryConvexity` | Noncollinear frontier triples, positive traversal orientation, and cyclic convexity of rational samples |
 | `UlamFloating.Extraction` | Full convex carousel extraction: velocity laws, polygon order, and time shift from the boundary hypotheses |
+| `UlamFloating.Zindler` | General Zindler carousels, rational boundary construction, and equivalence with constant chords |
+| `UlamFloating.FloatingEquivalence` | Physical Zindler equivalence specification and conditional physical third/quarter conclusions |
 | `UlamFloating.ChordRotation` | Intrinsic second carousel law and positive, bounded rotation of constant boundary chords |
 | `UlamFloating.AngularCoordinates` | Global real chord angles from the rotation equation, with an increasing continuously differentiable coordinate and inverse |
 | `UlamFloating.ChordInjectivity` | Nonparallel interlaced and adjacent chords, and no intermediate return of a directed chord vector |
@@ -137,15 +155,15 @@ The 1/5 theorem, polygon-to-lamina centroid identification,
 and the hydrostatic reduction remain unproved. The design aims for mathlib reuse; it has not
 undergone upstream review.
 
-Verification: `lake build` passes. The current blueprint has 131 nodes and
-270 Lean links: 239 proved lemmas, 5 statement-only propositions, and 26 other
+Verification: `lake build` passes. The current blueprint has 139 nodes and
+286 Lean links: 251 proved lemmas, 7 statement-only propositions, and 28 other
 definitions or structures. The full declaration audit passes, including the
 polygon-motion and boundary-rotation lemmas, with no admitted proofs or
 nonstandard axioms in their dependencies. The CI workflow runs the full
 current audit on every push.
 The audit rejects a proposition specification marked as proved and checks that
 proof links really name Lean theorems.
-The lemma count includes seven explicitly conditional assembly results.
+The lemma count includes eleven explicitly conditional assembly results.
 The audit also checks the exact unconditional types `PerimetralRigidity (1 / 3)`
 and `PerimetralRigidity (1 / 4)`, independently of their named specification aliases.
 Both checked rigidity theorems concern the geometric constant-chord formulation.
