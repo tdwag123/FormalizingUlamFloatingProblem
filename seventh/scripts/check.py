@@ -1,7 +1,8 @@
 """Build and kernel-audit the separate seventh-density project.
 
-Use --require-target before claiming completion or publishing a completed proof.
-An ordinary development audit explicitly reports an absent rigidity theorem.
+Use --require-target for the geometric constant-chord theorem.
+Use --require-physical-target before claiming the physical floating theorem.
+These are separate completion requirements; a geometric PASS is not a physical PASS.
 """
 
 import argparse
@@ -26,7 +27,10 @@ def run(*args):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--require-target", action="store_true")
+    parser.add_argument("--require-target", action="store_true",
+                        help="require the geometric constant-chord rigidity theorem")
+    parser.add_argument("--require-physical-target", action="store_true",
+                        help="also require physical floating rigidity (currently unproved)")
     args = parser.parse_args()
     for stream in (sys.stdout, sys.stderr):
         if hasattr(stream, "reconfigure"):
@@ -50,15 +54,42 @@ def main():
     proof_list = ", ".join("`" + name for name in proofs)
     target = PREFIX + "rigidity"
     has_target = target in proofs
+    physical_target = PREFIX + "physical_rigidity"
+    has_physical_target = physical_target in proofs
     target_check = (
         f"example : UlamFloating.PerimetralRigidity ((1 : ℝ) / 7) := {target}\n"
         if has_target else "")
+    physical_check = (
+        f"example : (∀ K : Set UlamFloating.Plane, "
+        f"UlamFloating.FloatsWithPerimetralDensity K ((1 : ℝ) / 7) → "
+        f"∃ c : UlamFloating.Plane, ∃ r : ℝ, 0 < r ∧ K = Metric.closedBall c r) := "
+        f"{physical_target}\n" if has_physical_target else "")
+    expanded_check = '''
+-- Check against literal geometric hypotheses, independently of target aliases.
+example (K : Set (EuclideanSpace ℝ (Fin 2))) (P l : ℝ)
+    (γ : ℝ → EuclideanSpace ℝ (Fin 2))
+    (hcompact : IsCompact K) (hconvex : StrictConvex ℝ K)
+    (hinterior : (interior K).Nonempty) (hP : 0 < P)
+    (hregular : ContDiff ℝ 1 γ) (hperiodic : Function.Periodic γ P)
+    (hsimple : ∀ s t, γ s = γ t ↔ ∃ k : ℤ, s = t + (k : ℝ) * P)
+    (hspeed : ∀ t, ‖deriv γ t‖ = 1) (hboundary : Set.range γ = frontier K)
+    (hl : 0 < l) (hchord : ∀ t, dist (γ (t + P / 7)) (γ t) = l) :
+    ∃ c : EuclideanSpace ℝ (Fin 2), ∃ r : ℝ, 0 < r ∧ K = Metric.closedBall c r :=
+  UlamFloating.Seventh.rigidity_expanded K P l γ hcompact hconvex hinterior hP
+    hregular hperiodic hsimple hspeed hboundary hl hchord
+''' if has_target else ""
     source = f'''import Seventh
 import Lean.Util.CollectAxioms
 
+{expanded_check}
 example : UlamFloating.Seventh.rigidityStatement =
     UlamFloating.PerimetralRigidity ((1 : ℝ) / 7) := rfl
+example : UlamFloating.Seventh.physicalRigidityStatement =
+    (∀ K : Set UlamFloating.Plane,
+      UlamFloating.FloatsWithPerimetralDensity K ((1 : ℝ) / 7) →
+      ∃ c : UlamFloating.Plane, ∃ r : ℝ, 0 < r ∧ K = Metric.closedBall c r) := rfl
 {target_check}
+{physical_check}
 open Lean Elab Command in
 run_cmd do
   let env ← getEnv
@@ -87,10 +118,17 @@ run_cmd do
     print(f"PASS: {len(proofs)} theorems; all scanned declarations and their dependencies "
           "have no admitted proofs or nonstandard axioms.", flush=True)
     if has_target:
-        print("PASS: exact unconditional PerimetralRigidity (1 / 7) theorem type.")
+        print("PASS: geometric PerimetralRigidity (1 / 7), including literal expanded hypotheses.")
     else:
         print("INCOMPLETE: the seventh-density rigidity theorem is not yet proved.")
-        if args.require_target:
+        if args.require_target or args.require_physical_target:
+            raise SystemExit(1)
+    if has_physical_target:
+        print("PASS: physical floating rigidity at perimetral density 1 / 7.")
+    else:
+        print("NOT PROVED: physical floating rigidity; the hydrostatic reduction remains open "
+              "in this repository.", flush=True)
+        if args.require_physical_target:
             raise SystemExit(1)
 
 

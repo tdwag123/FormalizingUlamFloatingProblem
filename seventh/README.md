@@ -59,10 +59,19 @@ python scripts/check.py --require-target
 ```
 
 Use `../.venv/Scripts/python.exe` in place of `python` on this Windows workspace.
-This builds the library, checks the exact unconditional theorem type, and audits
+This builds the library, checks the exact unconditional geometric theorem type
+and its literal expanded hypotheses, and audits
 the complete kernel dependencies of every scanned declaration. Only Lean's
 standard `propext`, `Classical.choice`, and `Quot.sound` are allowed; admitted
 proofs and additional axioms are rejected. CI runs this completion check.
+
+For the separate physical theorem, run
+`python scripts/check.py --require-physical-target`. This currently exits with
+failure after reporting that physical floating rigidity is not proved. A passing
+geometric audit must not be presented as a completed physical formalization.
+For physical rigidity at one seventh, only the forward implication from
+equilibrium to constant chords is needed; the converse Zindler equivalence is
+not required.
 
 The completed local audit passed for **322 declarations, including 308
 theorems**, and verified the exact type `PerimetralRigidity ((1 : ℝ) / 7)`.

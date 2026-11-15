@@ -24,3 +24,10 @@ import UlamFloating.PentagonGeometry
 import UlamFloating.PentagonReduction
 import UlamFloating.PentagonPeriods
 import UlamFloating.FloatingEquivalence
+import UlamFloating.HydrostaticMeasure
+import UlamFloating.BoundaryCapIntegrals
+import UlamFloating.CapContinuity
+import UlamFloating.AuerbachKinematics
+import UlamFloating.HydrostaticOrientation
+import UlamFloating.MovingCutIntegral
+import UlamFloating.BuoyancyCenter

@@ -1,23 +1,30 @@
 # Ulam floating problem: perimetral densities 1/3, 1/4, 1/5, 1/7
 
-A Lean 4 formalization and Lean blueprint. **Geometric rigidity at perimetral
-densities 1/3 and 1/4 is proved in Lean.** The 1/5 result remains unproved.
-Each checked theorem says that a compact strictly convex planar body with a
-simple C¹ unit-speed boundary and constant positive chords at the specified fraction of
-the perimeter is a closed disk of positive radius. The separate physical
-equilibrium reduction remains unproved.
+Ulam's floating body problem asks which bodies of uniform density can float in
+equilibrium in every orientation. This project studies the planar problem in
+Lean 4, with a [blueprint](blueprint/src/content.tex) explaining the definitions
+and proofs.
 
-**Geometric rigidity at density 1/7 is also proved**, in the separate
-[seventh project](seventh/README.md). Its proof reconstructs all 139 numerical
-certificates in Lean and concludes the same disk property from the original
-boundary hypotheses. See [the final theorem](seventh/Seventh/Rigidity.lean)
-and [its fully expanded statement](seventh/Seventh/StatementAudit.lean).
-The independent completion audit is `cd seventh && python scripts/check.py --require-target`.
+The geometric question is simple to state. Start anywhere on a closed curve of
+perimeter `P`, walk a distance `σP` along it, and join the two points by a chord.
+If that chord has the same length for every starting point, must the curve be a
+circle? Here `σ` is the **perimetral density**, not the material density or the
+fraction of area below the waterline.
 
-Start with [the blueprint](blueprint/src/content.tex). It contains definitions,
-proof dependencies, the triangle and square proof routes, the pentagon research
-obligation, and a separate bridge to physical equilibrium. Perimetral density
-is not material density or submerged area fraction.
+We prove that the body is a disk for **σ = 1/3, 1/4, and 1/7**, assuming it is
+compact and strictly convex, with nonempty interior and a simple C¹ unit-speed
+boundary. The common chord length can be any positive number. The 1/5 case
+remains unfinished.
+
+The **physical equilibrium-to-constant-chord implication is not yet proved in
+this repository**. The completed results are geometric rigidity theorems; a
+complete Lean proof starting from physical floating equilibrium still needs
+that implication.
+
+The [1/7 development](seventh/README.md) includes 139 rational certificates,
+each proved in Lean. See [the final theorem](seventh/Seventh/Rigidity.lean) and
+[its expanded hypotheses](seventh/Seventh/StatementAudit.lean). To check it, run
+`cd seventh && python scripts/check.py --require-target`.
 
 The final checked geometric results are `UlamFloating.third_rigidity` and
 `UlamFloating.quarter_rigidity` in [Rigidity.lean](UlamFloating/Rigidity.lean).
@@ -70,6 +77,13 @@ two cases without any assumption about 1/5.
 | `UlamFloating.Extraction` | Full convex carousel extraction: velocity laws, polygon order, and time shift from the boundary hypotheses |
 | `UlamFloating.Zindler` | General Zindler carousels, rational boundary construction, and equivalence with constant chords |
 | `UlamFloating.FloatingEquivalence` | Physical Zindler equivalence specification and conditional physical third/quarter conclusions |
+| `UlamFloating.HydrostaticMeasure` | Actual cap areas and first moments, complementary caps, and the torque criterion |
+| `UlamFloating.CapContinuity` | Continuity of actual cap integrals in the waterline normal and offset |
+| `UlamFloating.HydrostaticOrientation` | Consistent density for a continuous choice of oriented equilibrium cuts |
+| `UlamFloating.BoundaryCapIntegrals` | Derivatives of boundary-arc expressions; identification with actual cap integrals remains unproved |
+| `UlamFloating.MovingCutIntegral` | Differentiation under sliced integrals with a moving cut |
+| `UlamFloating.AuerbachKinematics` | Constant chord length from normality and an explicit moment-flux hypothesis |
+| `UlamFloating.BuoyancyCenter` | Exact centering criterion for equilibrium, assuming a circular actual-cap moment formula |
 | `UlamFloating.ChordRotation` | Intrinsic second carousel law and positive, bounded rotation of constant boundary chords |
 | `UlamFloating.AngularCoordinates` | Global real chord angles from the rotation equation, with an increasing continuously differentiable coordinate and inverse |
 | `UlamFloating.ChordInjectivity` | Nonparallel interlaced and adjacent chords, and no intermediate return of a directed chord vector |
@@ -162,8 +176,8 @@ The 1/5 theorem, polygon-to-lamina centroid identification,
 and the hydrostatic reduction remain unproved. The design aims for mathlib reuse; it has not
 undergone upstream review.
 
-Verification: `lake build` passes. The current blueprint has 139 nodes and
-286 Lean links: 251 proved lemmas, 7 statement-only propositions, and 28 other
+Verification: `lake build` passes. The current blueprint has 148 nodes and
+324 Lean links: 286 proved lemmas, 7 statement-only propositions, and 31 other
 definitions or structures. The full declaration audit passes, including the
 polygon-motion and boundary-rotation lemmas, with no admitted proofs or
 nonstandard axioms in their dependencies. The CI workflow runs the full

@@ -2274,6 +2274,172 @@ oriented unit normal occurs. This definition does not assume constant
 chord lengths, regular sampled polygons, or rigidity.
 \end{definition}
 
+\begin{definition}[Lamina first moment and boundary-arc expressions]
+\label{def:cap-moments}
+\lean{UlamFloating.laminaFirstMoment,UlamFloating.boundaryCapArea,UlamFloating.boundaryCapMoment}
+\leanok
+\uses{def:physical}
+The lamina first moment is the vector integral $\int_K x\,dx$.
+Separately, the signed boundary-arc area and moment expressions are
+\[
+ A_h(t)=\frac12\left(\int_t^{t+h}\omega(\gamma,\gamma')-\omega(p,q)\right),
+ \qquad
+ M_h(t)=\frac13\int_t^{t+h}\omega(\gamma,\gamma')\gamma
+       -\frac16\omega(p,q)(p+q),
+\]
+where $p=\gamma(t)$ and $q=\gamma(t+h)$.
+Equality of these line integrals with cap volume and moment is a remaining
+proof obligation, not a definition of physical equilibrium.
+\end{definition}
+
+\begin{lemma}[Cap measure and complementary partitions]
+\label{lem:cap-measure}
+\lean{UlamFloating.volume_waterline_eq_zero,UlamFloating.isCompact_waterlineCap,UlamFloating.integrableOn_laminaFirstMoment,UlamFloating.waterlineCap_union_neg,UlamFloating.waterlineCap_aedisjoint_neg,UlamFloating.planarArea_waterlineCap_add_neg,UlamFloating.laminaFirstMoment_waterlineCap_add_neg,UlamFloating.planarArea_pos,UlamFloating.planarArea_mono,UlamFloating.area_smul_laminaCentroid}
+\leanok
+\uses{def:cap-moments,def:physical}
+Waterlines with nonzero normal have zero planar measure. Caps of compact bodies
+are compact and have integrable first moments. The two complementary caps
+partition the body up to a null set, so their areas and first moments add to
+those of the body. A compact body with nonempty interior has positive area.
+\end{lemma}
+\begin{proof}
+\leanok
+Use nullity of proper affine subspaces, compact integrability, and additivity
+of volume and Bochner integration on almost disjoint sets.
+\end{proof}
+
+\begin{lemma}[Torque in first-moment form]
+\label{lem:cap-torque}
+\lean{UlamFloating.centroid_normal_iff_firstMoment,UlamFloating.exists_smul_iff_inner_rightAngleRotation_eq_zero,UlamFloating.isEquilibriumCut_iff_firstMoment,UlamFloating.IsEquilibriumCut.complement}
+\leanok
+\uses{lem:cap-measure,def:physical}
+For positive cap area $\rho |K|$, zero torque is equivalent to
+\[
+ \left\langle Ju,\int_{K\cap\{\langle u,x\rangle\leq a\}}x\,dx
+                     -\rho\int_K x\,dx\right\rangle=0.
+\]
+Reversing the normal and offset exchanges density $\rho$ with $1-\rho$.
+\end{lemma}
+\begin{proof}
+\leanok
+Multiply the centroid equation by cap area and use orthogonal decomposition
+in the plane. Complementary first moments yield the reversed-cut statement.
+\end{proof}
+
+\begin{lemma}[Continuity of actual cap integrals]
+\label{lem:cap-continuity}
+\lean{UlamFloating.continuousAt_integral_waterlineCap,UlamFloating.continuousAt_planarArea_waterlineCap,UlamFloating.continuousAt_laminaFirstMoment_waterlineCap}
+\leanok
+\uses{lem:cap-measure}
+For any integrable density on a fixed body, its integral over a waterline cap
+is continuous in the normal and offset at every nonzero normal. In particular,
+the actual cap area and first moment are continuous for a compact body.
+\end{lemma}
+\begin{proof}
+\leanok
+Away from the limiting waterline the cap indicator is locally constant.
+The exceptional waterline is null; apply dominated convergence.
+\end{proof}
+
+\begin{lemma}[Consistent orientation and density]
+\label{lem:cap-orientation}
+\lean{UlamFloating.unit_normals_eq_or_neg,UlamFloating.continuous_eq_of_two_values,UlamFloating.IsEquilibriumCut.of_same_chord,UlamFloating.exists_fixed_density_of_continuous_equilibrium_cuts}
+\leanok
+\uses{lem:cap-torque,lem:cap-continuity}
+Two unit normals to the same nonzero chord agree up to sign. A continuous
+choice of equilibrium waterlines therefore uses one fixed area density,
+which is either the initial density or its complement.
+\end{lemma}
+\begin{proof}
+\leanok
+The cap area is continuous and takes only the two values
+$\rho|K|$ and $(1-\rho)|K|$. The intermediate value theorem makes it constant;
+positive body area determines the global density.
+\end{proof}
+
+\begin{lemma}[Derivatives of the boundary-arc expressions]
+\label{lem:cap-boundary-derivatives}
+\lean{UlamFloating.hasDerivAt_integral_translate,UlamFloating.hasDerivAt_boundaryCapArea,UlamFloating.boundaryCapArea_eq_of_midpoint_parallel,UlamFloating.hasDerivAt_boundaryCapMoment_of_midpoint_parallel,UlamFloating.boundaryCapMoment_add_rotation_eq}
+\leanok
+\uses{def:cap-moments}
+For a $C^1$ boundary and $e=q-p$,
+$A_h'(t)=\tfrac12\omega(e,p'+q')$.
+Under the midpoint-parallel law,
+$M_h'(t)=\tfrac16\omega(p',e)e$.
+If the chord length is the constant $\ell$, then
+$M_h(t)+(\ell^2/12)Je(t)$ is constant.
+These are identities for the line-integral expressions defined above.
+\end{lemma}
+\begin{proof}
+\leanok
+Apply the fundamental theorem of calculus at both moving endpoints,
+differentiate the chord correction, and use the carousel moment identities.
+\end{proof}
+
+\begin{lemma}[Differential constant-chord argument]
+\label{lem:auerbach-kinematics}
+\lean{UlamFloating.IsUnitSpeedBoundary.chord_ne_zero,UlamFloating.IsUnitSpeedBoundary.chord_turning_pos,UlamFloating.normal_moment_eq_of_inner_derivative,UlamFloating.constant_norm_of_normal_moment_flux,UlamFloating.IsUnitSpeedBoundary.constantChord_of_normal_moment_flux}
+\leanok
+\uses{lem:cap-torque,def:boundary}
+Every proper positive boundary increment gives nonzero chords with strictly
+positive turning in the positive orientation. If a vector-valued function $F$
+satisfies
+$\langle e,F\rangle=0$ and $F'=\omega(e,e')e/12$, then $\|e\|$ is constant.
+The flux equation is an explicit premise; this lemma does not assert it for
+the actual cap moment.
+\end{lemma}
+\begin{proof}
+\leanok
+Differentiate the normality equation to obtain
+$F=-(\|e\|^2/12)Je$. Since $F'$ is parallel to $e$, $\|F\|^2$ is constant.
+Now $\|F\|=\|e\|^3/12$ forces constant chord length.
+\end{proof}
+
+\begin{lemma}[Sliced differentiation at a moving cut]
+\label{lem:moving-cut-integral}
+\lean{UlamFloating.lipschitzWith_integral_primitive,UlamFloating.hasDerivAt_integral_moving_upper,UlamFloating.hasDerivAt_integral_slices_moving_cut}
+\leanok
+\uses{lem:cap-continuity}
+A bounded locally integrable function has a Lipschitz primitive.
+For a finite outer measure, bounded integrands, uniformly locally Lipschitz
+cut heights $b(t,x)$ with $b(t_0,x)=0$, and almost-everywhere continuity of
+the integrand at the cut, differentiation gives
+\[
+ \frac{d}{dt}\bigg|_{t=t_0}\int_x\int_a^{b(t,x)}f(x,y)\,dy\,d\mu(x)
+ =\int_x \partial_t b(t_0,x)f(x,0)\,d\mu(x).
+\]
+The Lean theorem retains the measurable-integrand and derivative hypotheses.
+Its application to the concrete convex cap is still required.
+\end{lemma}
+\begin{proof}
+\leanok
+The bounded primitive gives a uniform Lipschitz majorant. Apply the fundamental
+theorem of calculus on almost every slice and differentiation under the integral.
+\end{proof}
+
+\begin{lemma}[The center required for physical equilibrium]
+\label{lem:buoyancy-center}
+\lean{UlamFloating.equilibrium_iff_capMoment_center}
+\leanok
+\uses{lem:cap-torque}
+Let $K$ be compact with nonempty interior, $\rho>0$, and let $(u_i,a_i)$
+be waterlines whose unit normals cover every direction. Suppose their actual
+cap areas equal $\rho|K|$ and their actual first moments have the formula
+$M_i=c+r u_i$, with fixed $c$ and $r$. Then
+\[
+ (\forall i,\ \text{the cut }(u_i,a_i)\text{ is in equilibrium})
+ \quad\Longleftrightarrow\quad c=\rho\int_K x\,dx.
+\]
+This theorem retains the cap-moment formula as a premise; it does not assert
+that a Zindler carousel supplies the required center.
+\end{lemma}
+\begin{proof}
+\leanok
+Torque balance says $c-\rho\int_Kx\,dx$ is parallel to every unit normal.
+Two perpendicular normals force this vector to vanish. Conversely, the
+center identity makes every cap-to-body moment difference normal to its cut.
+\end{proof}
+
 \begin{proposition}[Hydrostatic reduction: statement formalized]
 \label{prop:physical}
 \lean{UlamFloating.hydrostaticReductionStatement}
@@ -2285,10 +2451,17 @@ The formal interface uses unit normals $u$, offsets $a$, and caps
 $K\cap\{x:\ip ux\leq a\}$. Fix one submerged area fraction
 $\rho\in(0,1)$ for all orientations. Equilibrium requires the cap centroid
 minus the body centroid to be parallel to $u$. The waterline endpoints
-must divide the boundary at increment $\sigma P$. Prove integrability,
-positive cap area, unique offsets, endpoint regularity, and the necessary
-cap-integral differentiation. A converse is a separate future theorem.
-The physical rigidity statements also require the intrinsic boundary bridge.
+must divide the boundary at increment $\sigma P$. The measure, continuity,
+orientation, and differential lemmas above are proved. What remains is to
+apply the sliced differentiation theorem to the actual convex caps and obtain
+their flux formula. The converse must identify the constant center of the
+cap-moment locus with the body's lamina centroid. The formulation on a
+specified arbitrary unit-speed boundary also requires reparametrization invariance.
+The centering condition is substantive: see
+\href{https://arxiv.org/pdf/1909.12596\#page=44}{Wegner, Section 6.1},
+which distinguishes circular centroid loci from concentric ones for closed
+bicycle curves. This observation does not refute the rational-carousel
+specification below; it identifies a step that circularity alone cannot prove.
 
 \begin{proposition}[Physical Zindler equivalence: statement formalized]
 \label{prop:zindler-physical}

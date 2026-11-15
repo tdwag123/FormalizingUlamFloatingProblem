@@ -13,6 +13,22 @@ convexity and the midpoint law follow from the geometric construction.
 The physical equivalence is NOT proved here. Definitions ending in `Statement`
 only specify propositions. The assembly theorems retain the missing physical
 input as an explicit premise and do not depend on the fifth-density result.
+
+Supporting results now exist in `HydrostaticMeasure`, `CapContinuity`,
+`HydrostaticOrientation`, `BoundaryCapIntegrals`, `MovingCutIntegral`, and
+`AuerbachKinematics`, and `BuoyancyCenter`. They prove measure and torque identities, continuity,
+orientation consistency, boundary-integral derivatives, and the differential
+constant-length argument. They do not yet identify the moving boundary formulas
+with the actual cap integrals. The converse also needs identification of the
+buoyancy-locus center with the body's lamina centroid, and the specification on
+an arbitrary prescribed boundary needs invariance under unit-speed reparametrization.
+
+The centering issue is substantive: Wegner, *From Elastica to Floating Bodies of
+Equilibrium*, §6.1 (`https://arxiv.org/pdf/1909.12596#page=44`), explains that the
+two circular centroid loci of a closed bicycle curve need not have been shown
+concentric. This is not a counterexample to the rational-carousel specification,
+but circularity alone does not discharge its converse. `BuoyancyCenter` proves
+the precise centering criterion for the actual cap first moments.
 -/
 
 namespace UlamFloating
