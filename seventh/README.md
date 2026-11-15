@@ -4,6 +4,10 @@ Separate Lean project for the supplied *Ulam: the 1/7 case*, expository revision
 of 14 November 2026. It reuses the parent project's definitions and checked
 geometric lemmas through a local Lake dependency. The parent library is unchanged.
 
+The mathematical argument for the 1/7 result was developed using **GPT-Astra
+through the CRAP pipeline**. Its formal proof and numerical certificates are
+checked by Lean 4.
+
 The geometric rigidity theorem is proved in
 [Rigidity.lean](Seventh/Rigidity.lean):
 

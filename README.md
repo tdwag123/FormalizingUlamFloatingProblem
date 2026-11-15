@@ -5,6 +5,9 @@ equilibrium in every orientation. This project studies the planar problem in
 Lean 4, with a [blueprint](blueprint/src/content.tex) explaining the definitions
 and proofs.
 
+This work used **GPT-Astra through the CRAP pipeline** to develop the mathematical
+arguments behind these results. Lean 4 checks the completed formal proofs.
+
 The geometric question is simple to state. Start anywhere on a closed curve of
 perimeter `P`, walk a distance `σP` along it, and join the two points by a chord.
 If that chord has the same length for every starting point, must the curve be a
