@@ -1,0 +1,11 @@
+name = "ulamSeventh"
+version = "0.1.0"
+defaultTargets = ["Seventh"]
+packagesDir = "../.lake/packages"
+
+[[require]]
+name = "ulamFloating"
+path = ".."
+
+[[lean_lib]]
+name = "Seventh"

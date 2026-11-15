@@ -1,4 +1,4 @@
-# Ulam floating problem: perimetral densities 1/3, 1/4, 1/5
+# Ulam floating problem: perimetral densities 1/3, 1/4, 1/5, 1/7
 
 A Lean 4 formalization and Lean blueprint. **Geometric rigidity at perimetral
 densities 1/3 and 1/4 is proved in Lean.** The 1/5 result remains unproved.
@@ -6,6 +6,13 @@ Each checked theorem says that a compact strictly convex planar body with a
 simple C¹ unit-speed boundary and constant positive chords at the specified fraction of
 the perimeter is a closed disk of positive radius. The separate physical
 equilibrium reduction remains unproved.
+
+**Geometric rigidity at density 1/7 is also proved**, in the separate
+[seventh project](seventh/README.md). Its proof reconstructs all 139 numerical
+certificates in Lean and concludes the same disk property from the original
+boundary hypotheses. See [the final theorem](seventh/Seventh/Rigidity.lean)
+and [its fully expanded statement](seventh/Seventh/StatementAudit.lean).
+The independent completion audit is `cd seventh && python scripts/check.py --require-target`.
 
 Start with [the blueprint](blueprint/src/content.tex). It contains definitions,
 proof dependencies, the triangle and square proof routes, the pentagon research
